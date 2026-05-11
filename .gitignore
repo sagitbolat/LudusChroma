@@ -1,0 +1,6 @@
+*.swp
+*~
+debug/
+build_win/
+build/
+imgui.ini

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\sagit\\\\Documents\\\\Projects\\\\C++\\\\SkyEngine_ColorGameOnly\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(head -150)"
+    ]
+  }
+}
