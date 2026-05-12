@@ -258,7 +258,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
     for (int i = 0; i < level_info.num_entities; ++i) EntityUpdateMover(i, &comp_arrays, (float)dt);
     for (int i = 0; i < level_info.num_entities; ++i) {
         EntityUpdateReceiver(i, &comp_arrays);
-        EntityUpdateButton(i, &comp_arrays, entity_map);
+        EntityUpdateButton(i, &comp_arrays, entity_map, (float)dt);
     }
-    for (int i = 0; i < level_info.num_entities; ++i) EntityUpdateDoor(i, &comp_arrays, entity_map, level_info.num_entities);
+    for (int i = 0; i < level_info.num_entities; ++i) EntityUpdateDoor(i, &comp_arrays, entity_map, level_info.num_entities, (float)dt);
 }

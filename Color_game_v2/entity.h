@@ -87,15 +87,25 @@ struct SignalChannel {
     int32_t channels[MAX_CONNECTIONS];
 };
 
+enum DoorAnimState { DOOR_ANIM_CLOSED, DOOR_ANIM_OPENING, DOOR_ANIM_OPEN, DOOR_ANIM_CLOSING };
+
 struct Door {
-    bool is_open        = false;
-    bool open_by_default = false;
+    bool          is_open        = false;
+    bool          open_by_default = false;
+    DoorAnimState anim_state     = DOOR_ANIM_CLOSED;
+    float         anim_timer     = 0.f;
+    float         anim_duration  = 450.f;
 };
 
 struct Endgoal { };
 
+enum ButtonAnimState { BUTTON_ANIM_UP, BUTTON_ANIM_PRESSING, BUTTON_ANIM_DOWN, BUTTON_ANIM_RELEASING };
+
 struct Button {
-    bool is_pressed = false;
+    bool            is_pressed    = false;
+    ButtonAnimState anim_state    = BUTTON_ANIM_UP;
+    float           anim_timer    = 0.f;
+    float           anim_duration = 150.f;
 };
 
 struct Teleporter {
@@ -236,7 +246,13 @@ void ReceiverInit(int id, ComponentArrays* ca, Vector2Int pos, Color accepted_co
 void DoorInit(int id, ComponentArrays* ca, Vector2Int pos, bool open_by_default, int32_t channels[MAX_CONNECTIONS]) {
     ca->grid_position_arr.Insert(id, GridPosition{ pos, pos, GridLayer::GroundLayer });
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::GroundLayer));
-    ca->door_arr.Insert(id, Door{ open_by_default, open_by_default });
+    Door door{};
+    door.is_open         = open_by_default;
+    door.open_by_default = open_by_default;
+    door.anim_state      = open_by_default ? DOOR_ANIM_OPEN : DOOR_ANIM_CLOSED;
+    door.anim_timer      = 0.f;
+    door.anim_duration   = 400.f;
+    ca->door_arr.Insert(id, door);
     ca->laser_surface_arr.Insert(id, LaserSurface{ open_by_default ? LaserSurfaceMode::PassThrough : LaserSurfaceMode::Absorb });
     ca->signal_channel_arr.Insert(id, MakeSignalChannel(channels));
 }
@@ -251,7 +267,10 @@ void EndgoalInit(int id, ComponentArrays* ca, Vector2Int pos) {
 void ButtonInit(int id, ComponentArrays* ca, Vector2Int pos, int32_t channels[MAX_CONNECTIONS]) {
     ca->grid_position_arr.Insert(id, GridPosition{ pos, pos, GridLayer::GroundLayer });
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::GroundLayer));
-    ca->button_arr.Insert(id, Button{});
+    Button btn{};
+    btn.anim_state    = BUTTON_ANIM_UP;
+    btn.anim_duration = 300.f;
+    ca->button_arr.Insert(id, btn);
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::PassThrough });
     ca->signal_channel_arr.Insert(id, MakeSignalChannel(channels));
 }
@@ -397,13 +416,33 @@ void EntityUpdateMover(int entity_id, ComponentArrays* ca, float dt) {
     }
 }
 
-void EntityUpdateButton(int entity_id, ComponentArrays* ca, EntityMap& entity_map) {
+void EntityUpdateButton(int entity_id, ComponentArrays* ca, EntityMap& entity_map, float dt) {
     GridPosition* gp  = ca->grid_position_arr.Get(entity_id);
     Button*       btn = ca->button_arr.Get(entity_id);
     if (!gp || !btn) return;
 
     int top_id = entity_map.GetID(gp->position.x, gp->position.y, (int)GridLayer::EntityLayer);
     btn->is_pressed = (top_id >= 0);
+
+    bool anim_is_pressed = (btn->anim_state == BUTTON_ANIM_DOWN || btn->anim_state == BUTTON_ANIM_PRESSING);
+
+    if (btn->is_pressed && !anim_is_pressed) {
+        float carry = (btn->anim_state == BUTTON_ANIM_RELEASING) ? (btn->anim_duration - btn->anim_timer) : 0.f;
+        btn->anim_state = BUTTON_ANIM_PRESSING;
+        btn->anim_timer = carry;
+    } else if (!btn->is_pressed && anim_is_pressed) {
+        float carry = (btn->anim_state == BUTTON_ANIM_PRESSING) ? (btn->anim_duration - btn->anim_timer) : 0.f;
+        btn->anim_state = BUTTON_ANIM_RELEASING;
+        btn->anim_timer = carry;
+    }
+
+    if (btn->anim_state == BUTTON_ANIM_PRESSING || btn->anim_state == BUTTON_ANIM_RELEASING) {
+        btn->anim_timer += dt;
+        if (btn->anim_timer >= btn->anim_duration) {
+            btn->anim_state = btn->is_pressed ? BUTTON_ANIM_DOWN : BUTTON_ANIM_UP;
+            btn->anim_timer = 0.f;
+        }
+    }
 }
 
 void EntityUpdateReceiver(int entity_id, ComponentArrays* ca) {
@@ -418,7 +457,7 @@ void EntityUpdateReceiver(int entity_id, ComponentArrays* ca) {
     }
 }
 
-void EntityUpdateDoor(int entity_id, ComponentArrays* ca, EntityMap& entity_map, int num_entities) {
+void EntityUpdateDoor(int entity_id, ComponentArrays* ca, EntityMap& entity_map, int num_entities, float dt) {
     GridPosition* gp   = ca->grid_position_arr.Get(entity_id);
     Door*         door = ca->door_arr.Get(entity_id);
     if (!gp || !door) return;
@@ -454,6 +493,19 @@ void EntityUpdateDoor(int entity_id, ComponentArrays* ca, EntityMap& entity_map,
 
     if (occupied_by_other) door->is_open = true;
 
+    // Delay closing while any mover is still animating away from this cell
+    if (!door->is_open) {
+        for (int i = 0; i < num_entities; ++i) {
+            GridMover*    gm_i = ca->grid_mover_arr.Get(i);
+            GridPosition* ep   = ca->grid_position_arr.Get(i);
+            if (!gm_i || !gm_i->moving || !ep) continue;
+            if (ep->prev_position.x == gp->position.x && ep->prev_position.y == gp->position.y) {
+                door->is_open = true;
+                break;
+            }
+        }
+    }
+
     if (!door->is_open && !occupied_by_other) {
         entity_map.SetID(gp->position.x, gp->position.y, (int)GridLayer::EntityLayer, entity_id);
     } else if (door->is_open && top_id == entity_id) {
@@ -463,6 +515,28 @@ void EntityUpdateDoor(int entity_id, ComponentArrays* ca, EntityMap& entity_map,
     // Sync LaserSurface passability with open state
     LaserSurface* ls = ca->laser_surface_arr.Get(entity_id);
     if (ls) ls->mode = door->is_open ? LaserSurfaceMode::PassThrough : LaserSurfaceMode::Absorb;
+
+    // Animation state machine — detects open/close transitions and drives anim_timer
+    bool wants_open  = door->is_open;
+    bool anim_is_open = (door->anim_state == DOOR_ANIM_OPEN || door->anim_state == DOOR_ANIM_OPENING);
+
+    if (wants_open && !anim_is_open) {
+        float carry = (door->anim_state == DOOR_ANIM_CLOSING) ? (door->anim_duration - door->anim_timer) : 0.f;
+        door->anim_state = DOOR_ANIM_OPENING;
+        door->anim_timer = carry;
+    } else if (!wants_open && anim_is_open) {
+        float carry = (door->anim_state == DOOR_ANIM_OPENING) ? (door->anim_duration - door->anim_timer) : 0.f;
+        door->anim_state = DOOR_ANIM_CLOSING;
+        door->anim_timer = carry;
+    }
+
+    if (door->anim_state == DOOR_ANIM_OPENING || door->anim_state == DOOR_ANIM_CLOSING) {
+        door->anim_timer += dt;
+        if (door->anim_timer >= door->anim_duration) {
+            door->anim_state = door->is_open ? DOOR_ANIM_OPEN : DOOR_ANIM_CLOSED;
+            door->anim_timer = 0.f;
+        }
+    }
 }
 
 

@@ -178,11 +178,33 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
         Door* door = ca->door_arr.Get(entity_id);
         if (door) {
             Transform t = rt->transform;
-            if (door->is_open) {
-                int spr = door->open_by_default ? SPR_DOOR_OPEN_H : SPR_DOOR_OPEN_V;
-                DrawSprite(sprites[spr], t, main_camera);
+            bool is_horiz = door->open_by_default;
+
+            auto DrawAnimFrame = [&](SpriteSheet& sheet, float timer, float duration) {
+                int n    = sheet.frame_count > 0 ? sheet.frame_count : 1;
+                int frame = (int)(timer / (duration / (float)n));
+                if (frame >= n) frame = n - 1;
+                float uv_w = 1.f / (float)sheet.cols;
+                float uv_h = 1.f / (float)sheet.rows;
+                int   col  = frame % sheet.cols;
+                int   row  = frame / sheet.cols;
+                t.position.y += rendering_top ? 0.5f : -0.5f;
+                ShaderSetVector(shaders, "bot_left_uv",  Vector2{ 0.f, 0.f });
+                ShaderSetVector(shaders, "top_right_uv", Vector2{ uv_w, uv_h * 0.5f });
+                ShaderSetVector(shaders, "uv_offset",    Vector2{ col * uv_w, row * uv_h + (rendering_top ? uv_h * 0.5f : 0.f) });
+                DrawSprite(sheet.sprite, t, main_camera);
+                UVReset(shaders);
+            };
+
+            if (door->anim_state == DOOR_ANIM_OPEN) {
+                DrawSprite(sprites[is_horiz ? SPR_DOOR_OPEN_H : SPR_DOOR_OPEN_V], t, main_camera);
+            } else if (door->anim_state == DOOR_ANIM_OPENING) {
+                DrawAnimFrame(door_open_sheet, door->anim_timer, door->anim_duration);
+            } else if (door->anim_state == DOOR_ANIM_CLOSING) {
+                DrawAnimFrame(door_close_sheet, door->anim_timer, door->anim_duration);
             } else {
-                int spr = door->open_by_default ? SPR_DOOR_CLOSED_H : SPR_DOOR_CLOSED_V;
+                // CLOSED
+                int spr = is_horiz ? SPR_DOOR_CLOSED_H : SPR_DOOR_CLOSED_V;
                 t.position.y += rendering_top ? 0.5f : -0.5f;
                 if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
                 DrawSprite(sprites[spr], t, main_camera);
@@ -196,7 +218,17 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
     {
         Button* btn = ca->button_arr.Get(entity_id);
         if (btn) {
-            DrawSprite(sprites[btn->is_pressed ? SPR_BUTTON_DOWN : SPR_BUTTON_UP], rt->transform, main_camera);
+            if (btn->anim_state == BUTTON_ANIM_DOWN) {
+                DrawSprite(sprites[SPR_BUTTON_DOWN], rt->transform, main_camera);
+            } else if (btn->anim_state == BUTTON_ANIM_UP) {
+                DrawSprite(sprites[SPR_BUTTON_UP], rt->transform, main_camera);
+            } else {
+                SpriteSheet& sheet = (btn->anim_state == BUTTON_ANIM_PRESSING) ? button_down_sheet : button_up_sheet;
+                int n     = sheet.frame_count > 0 ? sheet.frame_count : 1;
+                int frame = (int)(btn->anim_timer / (btn->anim_duration / (float)n));
+                if (frame >= n) frame = n - 1;
+                DrawSpriteSheetFrame(&sheet, frame, rt->transform, main_camera, shaders);
+            }
             goto done;
         }
     }

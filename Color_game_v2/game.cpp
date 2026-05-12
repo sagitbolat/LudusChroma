@@ -17,6 +17,10 @@ GL_ID*        shaders               = nullptr;
 GPUBufferIDs  gpu_buffers            = {};
 Transform     tile_default_transform = {};
 SceneManager  scene_manager          = {};
+SpriteSheet   door_open_sheet        = {};
+SpriteSheet   door_close_sheet       = {};
+SpriteSheet   button_down_sheet      = {};
+SpriteSheet   button_up_sheet        = {};
 
 #include "tilemap.h"
 #include "entity.h"
@@ -261,6 +265,11 @@ void Awake(GameMemory* gm) {
         LoadSprite("assets/player_right_suit.png",    shaders, gpu_buffers), // 29
     };
     for (int i = 0; i < 30; ++i) sprites[i] = tmp[i];
+
+    door_open_sheet   = MakeSpriteSheet(LoadSprite("assets/door_open_anim.png",   shaders, gpu_buffers), 9, 1, 9);
+    door_close_sheet  = MakeSpriteSheet(LoadSprite("assets/door_close_anim.png",  shaders, gpu_buffers), 9, 1, 9);
+    button_down_sheet = MakeSpriteSheet(LoadSprite("assets/button_down_anim.png", shaders, gpu_buffers), 3, 1, 3);
+    button_up_sheet   = MakeSpriteSheet(LoadSprite("assets/button_up_anim.png",   shaders, gpu_buffers), 3, 1, 3);
 
     comp_arrays.Init(MAX_ENTITIES);
 
