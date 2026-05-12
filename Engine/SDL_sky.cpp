@@ -220,6 +220,7 @@ int main(int argc, char* argv[]) {
                     if (SDL_keyboard_state[SDL_SCANCODE_T]) keyboard_state.state.T = 1;  
                     if (SDL_keyboard_state[SDL_SCANCODE_U]) keyboard_state.state.U = 1;  
                     if (SDL_keyboard_state[SDL_SCANCODE_I]) keyboard_state.state.I = 1;    
+                    if (SDL_keyboard_state[SDL_SCANCODE_P]) keyboard_state.state.P = 1;    
                     if (SDL_keyboard_state[SDL_SCANCODE_A]) keyboard_state.state.A = 1;    
                     if (SDL_keyboard_state[SDL_SCANCODE_S]) keyboard_state.state.S = 1;    
                     if (SDL_keyboard_state[SDL_SCANCODE_D]) keyboard_state.state.D = 1;    
@@ -265,6 +266,7 @@ int main(int argc, char* argv[]) {
                     if (!SDL_keyboard_state[SDL_SCANCODE_T]) keyboard_state.state.T = 0;    
                     if (!SDL_keyboard_state[SDL_SCANCODE_U]) keyboard_state.state.U = 0;    
                     if (!SDL_keyboard_state[SDL_SCANCODE_I]) keyboard_state.state.I = 0;    
+                    if (!SDL_keyboard_state[SDL_SCANCODE_P]) keyboard_state.state.P = 0;    
                     if (!SDL_keyboard_state[SDL_SCANCODE_A]) keyboard_state.state.A = 0;    
                     if (!SDL_keyboard_state[SDL_SCANCODE_S]) keyboard_state.state.S = 0;    
                     if (!SDL_keyboard_state[SDL_SCANCODE_D]) keyboard_state.state.D = 0;    

@@ -452,6 +452,8 @@ void EntityUpdateDoor(int entity_id, ComponentArrays* ca, EntityMap& entity_map,
     int top_id           = entity_map.GetID(gp->position.x, gp->position.y, (int)GridLayer::EntityLayer);
     bool occupied_by_other = top_id >= 0 && top_id != entity_id;
 
+    if (occupied_by_other) door->is_open = true;
+
     if (!door->is_open && !occupied_by_other) {
         entity_map.SetID(gp->position.x, gp->position.y, (int)GridLayer::EntityLayer, entity_id);
     } else if (door->is_open && top_id == entity_id) {
