@@ -4,6 +4,7 @@
 #include "../Engine/SDL_sky.cpp"
 #include "../Engine/skymath.h"
 #include "../Engine/scene.h"
+#include "../Engine/sprite_anim.h"
 
 #include "../Engine/data_structs/dynamic_array.h"
 DEFINE_LIST(int);
