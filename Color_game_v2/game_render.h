@@ -61,11 +61,11 @@ static void GameRender() {
         int lvl = curr_level_index - 1;
         Transform t{};
         t.position.x = float(tilemap.width / 2);
-        t.position.y = main_camera.position.y + 2.5f;
+        t.position.y = main_camera.position.y + 2.25f;
         t.scale      = { 8.f, 2.f, 1.f };
         if      (lvl == 0) { DrawSprite(WASD_sprite,    t, main_camera); }
         else if (lvl == 1) { t.scale = { 4.f, 1.f, 1.f }; DrawSprite(reload_sprite,      t, main_camera); }
-        else if (lvl == 2) { t.scale = { 5.f, 1.f, 1.f }; DrawSprite(undo_sprite,        t, main_camera); }
+        else if (lvl == 2) { t.scale = { 5.f, 1.f, 1.f }; t.position.y += 0.75f; DrawSprite(undo_sprite,        t, main_camera); }
         else if (lvl == 3) { t.scale = { 7.f, 1.f, 1.f }; DrawSprite(wire_view_sprite,   t, main_camera); }
     }
 

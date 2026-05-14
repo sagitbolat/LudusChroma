@@ -188,28 +188,37 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
 
     // ---- Input ----
     if (!level_transitioning && num_players > 0) {
-        int player_id = player_ids[0];
-        GridPosition*         gp     = comp_arrays.grid_position_arr.Get(player_id);
-        GridMover*            gm     = comp_arrays.grid_mover_arr.Get(player_id);
-        GridPlayerControlled* player = comp_arrays.grid_player_controlled_arr.Get(player_id);
+        bool any_moving = false;
+        for (int p = 0; p < num_players; ++p) {
+            GridMover* gm = comp_arrays.grid_mover_arr.Get(player_ids[p]);
+            if (gm && gm->moving) { any_moving = true; break; }
+        }
 
-        if (gp && gm && player && !gm->moving) {
-            player->orientation = Direction::Neutral;
+        if (!any_moving) {
+            for (int p = 0; p < num_players; ++p) {
+                GridPlayerControlled* pc = comp_arrays.grid_player_controlled_arr.Get(player_ids[p]);
+                if (pc) pc->orientation = Direction::Neutral;
+            }
 
-            auto try_move = [&](Vector2Int dir, Direction face) {
+            auto try_move_all = [&](Vector2Int dir, Direction face) {
                 UndoSaveStep();
-                bool moved = EntityMove(player_id, dir, tilemap, entity_map, &comp_arrays, MAX_ENTITIES);
-                if (moved) {
-                    player->orientation = face;
-                } else {
-                    undo_ptr -= undo_num_movers;
+                bool any_moved = false;
+                for (int p = 0; p < num_players; ++p) {
+                    int pid = player_ids[p];
+                    bool moved = EntityMove(pid, dir, tilemap, entity_map, &comp_arrays, MAX_ENTITIES);
+                    if (moved) {
+                        any_moved = true;
+                        GridPlayerControlled* pc = comp_arrays.grid_player_controlled_arr.Get(pid);
+                        if (pc) pc->orientation = face;
+                    }
                 }
+                if (!any_moved) undo_ptr -= undo_num_movers;
             };
 
-            if (!gm->moving && (ks->state.W || ks->state.ARROWUP))    try_move({ 0,  1 }, Direction::Up);
-            if (!gm->moving && (ks->state.S || ks->state.ARROWDOWN))   try_move({ 0, -1 }, Direction::Down);
-            if (!gm->moving && (ks->state.A || ks->state.ARROWLEFT))   try_move({-1,  0 }, Direction::Left);
-            if (!gm->moving && (ks->state.D || ks->state.ARROWRIGHT))  try_move({ 1,  0 }, Direction::Right);
+            if (ks->state.W || ks->state.ARROWUP)    try_move_all({ 0,  1 }, Direction::Up);
+            if (ks->state.S || ks->state.ARROWDOWN)   try_move_all({ 0, -1 }, Direction::Down);
+            if (ks->state.A || ks->state.ARROWLEFT)   try_move_all({-1,  0 }, Direction::Left);
+            if (ks->state.D || ks->state.ARROWRIGHT)  try_move_all({ 1,  0 }, Direction::Right);
         }
 
         if (ks->state.U && !ks->prev_state.U) {
@@ -227,12 +236,17 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             --curr_level_index;
         }
 
-        if (gp && gm && !gm->moving) {
-            int floor_id = entity_map.GetID(gp->position.x, gp->position.y, (int)GridLayer::GroundLayer);
-            if (floor_id >= 0 && comp_arrays.endgoal_arr.Get(floor_id)) {
-                showing_wires       = false;
-                level_transitioning = true;
-                if (curr_level_index >= NUM_LEVELS) curr_level_index = 0;
+        for (int p = 0; p < num_players; ++p) {
+            GridPosition* gp = comp_arrays.grid_position_arr.Get(player_ids[p]);
+            GridMover*    gm = comp_arrays.grid_mover_arr.Get(player_ids[p]);
+            if (gp && gm && !gm->moving) {
+                int floor_id = entity_map.GetID(gp->position.x, gp->position.y, (int)GridLayer::GroundLayer);
+                if (floor_id >= 0 && comp_arrays.endgoal_arr.Get(floor_id)) {
+                    showing_wires       = false;
+                    level_transitioning = true;
+                    if (curr_level_index >= NUM_LEVELS) curr_level_index = 0;
+                    break;
+                }
             }
         }
 

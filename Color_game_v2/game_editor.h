@@ -272,10 +272,4 @@ void EditorUpdate(KeyboardState* ks, double dt) {
         EditorLoadLevel(ed_name);
         curr_level_index = ed_level_idx + 1;
     }
-    if (ks->state.BACKSPACE && !ks->prev_state.BACKSPACE) {
-        if (--ed_level_idx < 0) ed_level_idx = NUM_LEVELS - 1;
-        strncpy(ed_name, level_names[ed_level_idx], 255);
-        EditorLoadLevel(ed_name);
-        curr_level_index = ed_level_idx + 1;
-    }
 }
