@@ -216,9 +216,9 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             };
 
             if (ks->state.W || ks->state.ARROWUP)    try_move_all({ 0,  1 }, Direction::Up);
-            if (ks->state.S || ks->state.ARROWDOWN)   try_move_all({ 0, -1 }, Direction::Down);
-            if (ks->state.A || ks->state.ARROWLEFT)   try_move_all({-1,  0 }, Direction::Left);
-            if (ks->state.D || ks->state.ARROWRIGHT)  try_move_all({ 1,  0 }, Direction::Right);
+            else if (ks->state.S || ks->state.ARROWDOWN)   try_move_all({ 0, -1 }, Direction::Down);
+            else if (ks->state.A || ks->state.ARROWLEFT)   try_move_all({-1,  0 }, Direction::Left);
+            else if (ks->state.D || ks->state.ARROWRIGHT)  try_move_all({ 1,  0 }, Direction::Right);
         }
 
         if (ks->state.U && !ks->prev_state.U) {

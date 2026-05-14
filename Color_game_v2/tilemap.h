@@ -16,7 +16,7 @@ struct Tilemap {
 // NOTE: Returns true if colliding with wall, false if not colliding with wall.
 bool TestTileCollide(Tilemap map, Vector2Int tile_pos) {
     int tile = map.map[tile_pos.y * map.width + tile_pos.x];
-    if ((tile == 1 || tile == 0) || tile > 14) return false;
+    if ((tile == 1 || tile == 0 || tile == 10 || tile == 11 || tile == 15 || tile == 16) || tile > 14) return false;
     else return true;
 }
 

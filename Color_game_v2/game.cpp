@@ -45,15 +45,15 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
 // SECTION: Level list
 // ============================================================
 
-const int NUM_LEVELS = 11;
+const int NUM_LEVELS = 15;
 int curr_level_index = 0;
 
 char level_names[][64] = {
-    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"
 };
 
 float level_zoom[] = {
-    14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 20.f
+    14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 20.f, 14.f, 14.f, 14.f, 20.f
 };
 
 
