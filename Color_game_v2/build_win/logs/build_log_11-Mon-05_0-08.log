@@ -1,0 +1,33 @@
+======================================== 
+===== Build started at  0:08:34.30 ===== 
+======================================== 
+ 
+[ 0:08:34.31] +++++ Compiling UI +++++  
+ 
+[ 0:08:36.96] 0 Errors 
+ 
+[ 0:08:36.97] ===== UI Compiled =====  
+[ 0:08:36.97] +++++ Compiling Rendering Layer +++++ 
+ 
+[ 0:08:37.74] 0 Errors 
+ 
+[ 0:08:37.76] ===== Render Layer Compiled =====  
+[ 0:08:37.76] +++++ Compiling Audio Layer +++++ 
+ 
+[ 0:08:37.96] 0 Errors 
+ 
+[ 0:08:37.97] ===== Audio Layer Compiled =====  
+[ 0:08:38.01] +++++ Compiling Project +++++ 
+ 
+..\game.cpp: In function 'void Awake(GameMemory*)':
+..\game.cpp:563:21: error: 'SetCurrentDirectoryA' was not declared in this scope
+         if (base) { SetCurrentDirectoryA(base); SDL_free(base); }
+                     ^~~~~~~~~~~~~~~~~~~~
+..\game.cpp:563:21: note: suggested alternative: 'level_directory'
+         if (base) { SetCurrentDirectoryA(base); SDL_free(base); }
+                     ^~~~~~~~~~~~~~~~~~~~
+                     level_directory
+ 
+=======================================
+===== Build failed at  0:08:38.45 =====
+=======================================

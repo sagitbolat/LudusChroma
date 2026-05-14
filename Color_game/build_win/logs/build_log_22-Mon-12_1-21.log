@@ -1,0 +1,64 @@
+======================================== 
+===== Build started at  1:21:42.92 ===== 
+======================================== 
+ 
+[ 1:21:42.94] +++++ Compiling Project +++++ 
+ 
+In file included from ..\editor.cpp:10:
+..\level_loader.h: In function 'void ReadEntityState(Entity*, EntityMap*, int*, int*, FILE*)':
+..\level_loader.h:138:9: error: 'player_active' was not declared in this scope
+     if (player_active) {
+         ^~~~~~~~~~~~~
+..\level_loader.h:138:9: note: suggested alternative: 'player_ids'
+     if (player_active) {
+         ^~~~~~~~~~~~~
+         player_ids
+..\level_loader.h:148:16: error: 'emitter_active' was not declared in this scope
+     } else if (emitter_active) {
+                ^~~~~~~~~~~~~~
+..\level_loader.h:148:16: note: suggested alternative: 'teleporter_active'
+     } else if (emitter_active) {
+                ^~~~~~~~~~~~~~
+                teleporter_active
+..\level_loader.h:154:13: error: 'movable_active' was not declared in this scope
+             movable_active,
+             ^~~~~~~~~~~~~~
+..\level_loader.h:158:16: error: 'receiver_active' was not declared in this scope
+     } else if (receiver_active) {
+                ^~~~~~~~~~~~~~~
+..\level_loader.h:158:16: note: suggested alternative: 'teleporter_active'
+     } else if (receiver_active) {
+                ^~~~~~~~~~~~~~~
+                teleporter_active
+..\level_loader.h:164:13: error: 'movable_active' was not declared in this scope
+             movable_active
+             ^~~~~~~~~~~~~~
+..\level_loader.h:167:16: error: 'endgoal_active' was not declared in this scope
+     } else if (endgoal_active) {
+                ^~~~~~~~~~~~~~
+..\level_loader.h:167:16: note: suggested alternative: 'EndgoalInit'
+     } else if (endgoal_active) {
+                ^~~~~~~~~~~~~~
+                EndgoalInit
+..\level_loader.h:170:16: error: 'door_active' was not declared in this scope
+     } else if (door_active) {
+                ^~~~~~~~~~~
+..\level_loader.h:170:16: note: suggested alternative: 'active'
+     } else if (door_active) {
+                ^~~~~~~~~~~
+                active
+..\level_loader.h:178:16: error: 'button_active' was not declared in this scope
+     } else if (button_active) {
+                ^~~~~~~~~~~~~
+..\level_loader.h:178:16: note: suggested alternative: 'ButtonStyle'
+     } else if (button_active) {
+                ^~~~~~~~~~~~~
+                ButtonStyle
+In file included from ..\editor.cpp:10:
+..\level_loader.h:118:9: warning: unused variable 'teleporter_active' [-Wunused-variable]
+     int teleporter_active = ReadUint32(file_p);
+         ^~~~~~~~~~~~~~~~~
+ 
+=======================================
+===== Build failed at  1:21:43.37 =====
+=======================================
