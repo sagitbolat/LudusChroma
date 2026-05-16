@@ -205,6 +205,9 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
                 bool any_moved = false;
                 for (int p = 0; p < num_players; ++p) {
                     int pid = player_ids[p];
+                    if (isHidden(pid, &comp_arrays)) continue;
+                    GridMover* gm_p = comp_arrays.grid_mover_arr.Get(pid);
+                    if (gm_p && gm_p->moving) continue; // already pushed this frame, skip
                     bool moved = EntityMove(pid, dir, tilemap, entity_map, &comp_arrays, MAX_ENTITIES);
                     if (moved) {
                         any_moved = true;
@@ -234,6 +237,11 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             level_transitioning = true;
             restarting_level    = true;
             --curr_level_index;
+        }
+
+        if (ks->state.C && !ks->prev_state.C) {
+            SwitchHiddenColor(&entity_map, &comp_arrays);
+            SetClearColor(ToFColor(hidden_color_array[curr_hidden_color]));
         }
 
         for (int p = 0; p < num_players; ++p) {
@@ -268,7 +276,12 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
 
     // ---- Per-frame ECS updates ----
     ClearFrameState(&comp_arrays);
-    for (int i = 0; i < level_info.num_entities; ++i) EntityUpdateEmit(i, &comp_arrays, tilemap, entity_map, emission_map);
+    for (int i = 0; i < level_info.num_entities; ++i) { 
+        LaserEmitter* laser_emitter = comp_arrays.laser_emitter_arr.Get(i);
+        // NOTE: do not render emissions that are hidden due to the color_switcher hidden color.
+        if (laser_emitter != nullptr && laser_emitter->color == hidden_color_array[curr_hidden_color]) continue;
+        EntityUpdateEmit(i, &comp_arrays, tilemap, entity_map, emission_map); 
+    }
     for (int i = 0; i < level_info.num_entities; ++i) EntityUpdateMover(i, &comp_arrays, (float)dt);
     for (int i = 0; i < level_info.num_entities; ++i) {
         EntityUpdateReceiver(i, &comp_arrays);

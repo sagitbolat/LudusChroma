@@ -15,7 +15,9 @@ struct EntityMap {
     int  depth; // always 2: z=0 ground layer, z=1 entity layer
 
     int  GetID(int x, int y, int z) { return map[(y * width + x) * depth + z]; }
+    int  GetID(Vector2Int position, int layer) { return map[(position.y * width + position.x) * depth + layer]; }
     void SetID(int x, int y, int z, int id) { map[(y * width + x) * depth + z] = id; }
+    void SetID(Vector2Int position, int layer, int id) { map[(position.y * width + position.x) * depth + layer] = id; }
 };
 
 struct EmissionTile {
@@ -115,9 +117,14 @@ struct Teleporter {
 
 struct ColorChanger {
     Color          main_color;
-    ColorBlendMode mode                  = ColorBlendMode::Blended;
+    ColorBlendMode mode                  = ColorBlendMode::Additive;
     Color          vertical_input_color   { 0, 0, 0, 0 }; // frame-transient: cleared after each render
     Color          horizontal_input_color { 0, 0, 0, 0 };
+};
+
+
+struct ColorTag {
+    Color color;
 };
 
 
@@ -152,6 +159,7 @@ struct ComponentArrays {
     SparseSet<Button>               button_arr;
     SparseSet<Teleporter>           teleporter_arr;
     SparseSet<ColorChanger>         color_changer_arr;
+    SparseSet<ColorTag>             color_tag_arr;
 
     void Init(int initial_capacity) {
         grid_position_arr.Init(initial_capacity);
@@ -167,6 +175,7 @@ struct ComponentArrays {
         button_arr.Init(initial_capacity);
         teleporter_arr.Init(initial_capacity);
         color_changer_arr.Init(initial_capacity);
+        color_tag_arr.Init(initial_capacity);
     }
 
     void Clear() {
@@ -183,6 +192,7 @@ struct ComponentArrays {
         button_arr.Clear();
         teleporter_arr.Clear();
         color_changer_arr.Clear();
+        color_tag_arr.Clear();
     }
 };
 
@@ -211,13 +221,15 @@ void PlayerInit(int id, ComponentArrays* ca, Vector2Int pos, Direction orientati
     ca->grid_mover_arr.Insert(id, GridMover{});
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::EntityLayer));
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::Absorb });
+    ca->color_tag_arr.Insert(id, ColorTag{ color });
 }
 
-void PushblockInit(int id, ComponentArrays* ca, Vector2Int pos) {
+void PushblockInit(int id, ComponentArrays* ca, Vector2Int pos, Color color = { 255, 255, 255, 255 }) {
     ca->grid_position_arr.Insert(id, GridPosition{ pos, pos, GridLayer::EntityLayer });
     ca->grid_mover_arr.Insert(id, GridMover{});
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::EntityLayer));
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::Absorb });
+    ca->color_tag_arr.Insert(id, ColorTag{ color });
 }
 
 void StaticBlockInit(int id, ComponentArrays* ca, Vector2Int pos) {
@@ -289,6 +301,7 @@ void ColorChangerInit(int id, ComponentArrays* ca, Vector2Int pos, Color color, 
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, layer));
     ca->color_changer_arr.Insert(id, ColorChanger{ color, mode });
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::PassThrough });
+    ca->color_tag_arr.Insert(id, ColorTag{ color });
 }
 
 
@@ -303,22 +316,25 @@ static inline Color BlendColor(Color a, Color b) {
         uint8_t((a.r + b.r) / 2),
         uint8_t((a.g + b.g) / 2),
         uint8_t((a.b + b.b) / 2),
-        uint8_t((a.a + b.a) / 2)
+        uint8_t(255) 
     };
 }
 
 static inline Color AddColor(Color a, Color b) {
-    if (b.a == 0) return a;
-    if (a.a == 0) return b;
-    return a + b;
+    return Color{
+        (uint8_t)IntClamp(a.r - 92 + b.r, 92, 230),
+        (uint8_t)IntClamp(a.g - 92 + b.g, 92, 230),
+        (uint8_t)IntClamp(a.b - 92 + b.b, 92, 230),
+        uint8_t(255)
+    };
 }
 
 static inline Color SubtractColor(Color a, Color b) {
     return Color{
-        (uint8_t)IntClamp(a.r - b.r, 0, 255),
-        (uint8_t)IntClamp(a.g - b.g, 0, 255),
-        (uint8_t)IntClamp(a.b - b.b, 0, 255),
-        (uint8_t)IntClamp(a.a - b.a, 0, 255)
+        (uint8_t)IntClamp(a.r - b.r, 92, 230),
+        (uint8_t)IntClamp(a.g - b.g, 92, 230),
+        (uint8_t)IntClamp(a.b - b.b, 92, 230),
+        uint8_t(255) 
     };
 }
 
@@ -573,6 +589,7 @@ void UpdateEmit(
         ColorChanger* cc = ca->color_changer_arr.Get(entity_id);
         if (cc) {
             EntityUpdateColorChanger(entity_id, ca, entity_map, emission_map, tilemap, direction);
+            return;
         }
 
         LaserSurface* ls = ca->laser_surface_arr.Get(entity_id);

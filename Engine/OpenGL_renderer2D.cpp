@@ -228,6 +228,10 @@ void ShaderSetTransform(GL_ID* shader, const char* name, glm::mat4 trans) {
 }
 
 
+// SECTION: Change params
+void SetClearColor(fColor color) { 
+    glClearColor(color.r, color.g, color.b, color.a); 
+}
 
 // SECTION: Rendering
 

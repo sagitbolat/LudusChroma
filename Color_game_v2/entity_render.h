@@ -2,6 +2,7 @@
 // Rendering layer for ECS entities. Depends on entity.h and the engine's sprite/shader API.
 // game.cpp sets rt->transform.position.z before calling EntityRender to control draw order.
 #include "entity.h"
+#include "game_color_switcher.h"
 
 // Sprite index constants — must match the sprite array loaded in game.cpp
 #define SPR_PLAYER_NEUTRAL  0
@@ -136,6 +137,10 @@ void EmissionRender(int x, int y, EmissionMap& emission_map, Sprite emission_spr
 
 void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Sprite* sprites,
                   bool rendering_top = true, bool level_transitioning = false) {
+
+    // If Entity is hidden due to the clear color mechanic, skip rendering it.
+    if (isHidden(entity_id, ca)) return;
+    
     RenderTransform* rt = ca->render_transform_arr.Get(entity_id);
     if (!rt) return;
 
@@ -322,24 +327,42 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
                 t.scale.y      = 2.f;
                 t.position.y  -= 0.5f;
                 t.position.z  += 0.1f;
-
-                ShaderSetVector(shaders, "uv_offset", Vector2{ 0.f, 0.f });
-                ColorMul(shaders, cc->horizontal_input_color, !level_transitioning);
-                DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
-
-                ShaderSetVector(shaders, "uv_offset", Vector2{ 1.f / 5.f, 0.f });
-                t.position.z += 0.1f;
-                ColorMul(shaders, cc->vertical_input_color, !level_transitioning);
-                DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
-
-                // Combined output beam
-                float combined_offset = 2.f / 5.f;
-                if (cc->vertical_input_color.a == 0)   combined_offset = 3.f / 5.f;
-                else if (cc->horizontal_input_color.a == 0) combined_offset = 4.f / 5.f;
-                ShaderSetVector(shaders, "uv_offset", Vector2{ combined_offset, 0.f });
-                t.position.z += 0.1f;
-                ColorMul(shaders, AddColor(cc->horizontal_input_color, cc->vertical_input_color), !level_transitioning);
-                DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                
+                // Combined output beam — only when both beams are active
+                if (cc->horizontal_input_color.a > 0 && cc->vertical_input_color.a > 0) {
+                    ShaderSetVector(shaders, "uv_offset", Vector2{ 0.f, 0.f });
+                    ColorMul(shaders, cc->horizontal_input_color, !level_transitioning);
+                    DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                    
+                    ShaderSetVector(shaders, "uv_offset", Vector2{ 1.f / 5.f, 0.f });
+                    t.position.z += 0.1f;
+                    ColorMul(shaders, cc->vertical_input_color, !level_transitioning);
+                    DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                    
+                    ShaderSetVector(shaders, "uv_offset", Vector2{ 2.f / 5.f, 0.f });
+                    t.position.z += 0.1f;
+                    ColorMul(shaders, AddColor(cc->horizontal_input_color, cc->vertical_input_color), !level_transitioning);
+                    DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                } else if (cc->horizontal_input_color.a > 0) {
+                    ShaderSetVector(shaders, "uv_offset", Vector2{ 0.f, 0.f });
+                    ColorMul(shaders, cc->horizontal_input_color, !level_transitioning);
+                    DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                    
+                    ShaderSetVector(shaders, "uv_offset", Vector2{ 2.f / 5.f, 0.f });
+                    t.position.z += 0.1f;
+                    ColorMul(shaders, cc->horizontal_input_color, !level_transitioning);
+                    DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                } else if (cc->vertical_input_color.a > 0) {
+                    ShaderSetVector(shaders, "uv_offset", Vector2{ 1.f / 5.f, 0.f });
+                    t.position.z += 0.1f;
+                    ColorMul(shaders, cc->vertical_input_color, !level_transitioning);
+                    DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                    
+                    ShaderSetVector(shaders, "uv_offset", Vector2{ 2.f / 5.f, 0.f });
+                    t.position.z += 0.1f;
+                    ColorMul(shaders, cc->vertical_input_color, !level_transitioning);
+                    DrawSprite(sprites[SPR_CC_OVERLAY], t, main_camera);
+                }
 
                 UVReset(shaders);
                 ColorMulReset(shaders, !level_transitioning);
@@ -356,11 +379,14 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
 
     // ---- Push block (has GridMover, no special component above) ----
     if (gm) {
+        ColorTag* ct = ca->color_tag_arr.Get(entity_id);
         Transform t{};
         CopyTransform(&t, rt->transform);
         t.position.y += rendering_top ? 0.5f : -0.5f;
         if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
+        if (ct) ColorMul(shaders, ct->color, !level_transitioning);
         DrawSprite(sprites[SPR_PUSH_BLOCK], t, main_camera);
+        if (ct) ColorMulReset(shaders, !level_transitioning);
         UVReset(shaders);
         goto done;
     }

@@ -12,6 +12,15 @@ DEFINE_LIST(int);
 #define MAX_ENTITIES    256
 #define MAX_NUM_PLAYERS 256
 
+const Color DEFAULT_WHITE   = Color{ 230, 230, 230, 255 };
+const Color DEFAULT_BLACK   = Color{  92,  92,  92, 255 };
+const Color DEFAULT_RED     = Color{ 230,  92,  92, 255 };
+const Color DEFAULT_GREEN   = Color{  92, 230,  92, 255 };
+const Color DEFAULT_BLUE    = Color{  92,  92, 230, 255 };
+const Color DEFAULT_YELLOW  = Color{ 230, 230,  92, 255 };
+const Color DEFAULT_MAGENTA = Color{ 230,  92, 230, 255 };
+const Color DEFAULT_CYAN    = Color{  92, 230, 230, 255 };
+
 // Declared before game headers because tilemap.h's DrawTile references them as globals.
 GL_ID*        shaders               = nullptr;
 GPUBufferIDs  gpu_buffers            = {};
@@ -37,7 +46,7 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
     *h                = 720;
     *w_in_world_space = 14.0f;
     *fullscreen       = false;
-    *clear_color      = { 43.f/255.f, 43.f/255.f, 39.f/255.f, 1.f };
+    *clear_color      = ToFColor(DEFAULT_BLACK);
 }
 
 
@@ -53,7 +62,7 @@ char level_names[][64] = {
 };
 
 float level_zoom[] = {
-    14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 20.f, 14.f, 14.f, 14.f, 20.f
+    14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 20.f, 14.f, 14.f, 20.f
 };
 
 
@@ -186,6 +195,7 @@ static void LoadLevel(int index) {
 #include "game_editor.h"
 #include "game_render.h"
 #include "game_scenes.h"
+#include "game_color_switcher.h"
 
 
 // ============================================================

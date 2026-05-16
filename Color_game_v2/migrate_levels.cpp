@@ -1,11 +1,15 @@
 // migrate_levels.cpp
-// Converts v1 .level files to v2 format.
+// Two migration modes:
 //
-// Usage:
-//   migrate.exe <input_dir> <output_dir>
+//   1. v1 -> v2 (original):
+//        migrate.exe <input_dir> <output_dir>
+//      Converts old Color_game v1 .level files to v2 format.
 //
-// Reads every level named in the game's level list from input_dir, writes v2
-// files to output_dir (which must already exist).
+//   2. v2 -> v2+colortag (add ColorTag to PushBlocks):
+//        migrate.exe --add-colortag <dir>
+//      Rewrites every current v2 level file in-place, inserting a default
+//      white color field for each PushBlock.  All other entity types are
+//      byte-identical between old and new format.
 //
 // Compile (standalone, no engine deps):
 //   g++ -o migrate.exe migrate_levels.cpp
@@ -285,9 +289,9 @@ static void MigrateLevel(const char* in_path, const char* out_path) {
 }
 
 // ============================================================
-// Level list (matches game.cpp level_names[])
+// Level list — v1 source files (matches old Color_game level_names[])
 // ============================================================
-static const char* level_names[] = {
+static const char* v1_level_names[] = {
     "0",    "1",    "2",    "3",    "4",
     "5_w",  "6_w",  "7_w",  "29",   "10_w",
     "11_w", "12_w", "13_w", "14_w", "15_w",
@@ -298,19 +302,138 @@ static const char* level_names[] = {
     nullptr
 };
 
+// ============================================================
+// Level list — current v2 files (matches game.cpp level_names[])
+// ============================================================
+static const char* v2_level_names[] = {
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "10", "11", "12", "13", "14",
+    nullptr
+};
+
+// ============================================================
+// Extra u32 count per v2 entity type AFTER [type][x][y]
+// (the old format, before ColorTag — PushBlock had 0 extras)
+// ============================================================
+static int V2ExtraU32Count(uint32_t type) {
+    switch (type) {
+        case V2_PLAYER:        return 5;  // color[4] + orientation[1]
+        case V2_PUSH_BLOCK:    return 0;  // was empty; this is what we're patching
+        case V2_STATIC_BLOCK:  return 0;
+        case V2_EMITTER:       return 5;  // color[4] + dir[1]
+        case V2_RECEIVER:      return 14; // color[4] + channels[10]
+        case V2_DOOR:          return 11; // open_by_default[1] + channels[10]
+        case V2_ENDGOAL:       return 0;
+        case V2_BUTTON:        return 10; // channels[10]
+        case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
+        case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        default:               return 0;
+    }
+}
+
+// ============================================================
+// v2 -> v2+colortag  (inserts white ColorTag into every PushBlock)
+// Reads into memory first so in_path == out_path is safe.
+// ============================================================
+static void MigrateLevelAddColorTag(const char* in_path, const char* out_path) {
+    FILE* fin = fopen(in_path, "rb");
+    if (!fin) { printf("  SKIP (not found): %s\n", in_path); return; }
+
+    fseek(fin, 0, SEEK_END);
+    long file_size = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    uint8_t* buf = (uint8_t*)malloc(file_size);
+    fread(buf, 1, file_size, fin);
+    fclose(fin);
+
+    int pos = 0;
+    auto readU32 = [&]() -> uint32_t {
+        uint32_t v = 0;
+        memcpy(&v, buf + pos, 4);
+        pos += 4;
+        return v;
+    };
+
+    uint32_t width        = readU32();
+    uint32_t height       = readU32();
+    uint32_t num_floor    = readU32();
+    uint32_t num_entities = readU32();
+
+    FILE* fout = fopen(out_path, "wb");
+    if (!fout) {
+        printf("  FAIL (cannot write): %s\n", out_path);
+        free(buf);
+        return;
+    }
+
+    WriteU32(width,        fout);
+    WriteU32(height,       fout);
+    WriteU32(num_floor,    fout);
+    WriteU32(num_entities, fout);
+
+    int tilemap_bytes = (int)(width * height * 2);
+    fwrite(buf + pos, 1, tilemap_bytes, fout);
+    pos += tilemap_bytes;
+
+    int pushblocks_patched = 0;
+    for (uint32_t i = 0; i < num_entities; ++i) {
+        uint32_t type = readU32();
+        uint32_t x    = readU32();
+        uint32_t y    = readU32();
+        WriteU32(type, fout);
+        WriteU32(x,    fout);
+        WriteU32(y,    fout);
+
+        int extra = V2ExtraU32Count(type);
+        for (int e = 0; e < extra; ++e)
+            WriteU32(readU32(), fout);
+
+        if (type == V2_PUSH_BLOCK) {
+            WriteU32(255u, fout); // r
+            WriteU32(255u, fout); // g
+            WriteU32(255u, fout); // b
+            WriteU32(255u, fout); // a
+            ++pushblocks_patched;
+        }
+    }
+
+    fclose(fout);
+    free(buf);
+    printf("  OK  %-30s  (%d pushblocks patched)\n", out_path, pushblocks_patched);
+}
+
 int main(int argc, char* argv[]) {
+    if (argc >= 2 && strcmp(argv[1], "--add-colortag") == 0) {
+        if (argc < 3) {
+            printf("Usage: migrate.exe --add-colortag <dir>\n");
+            printf("  Patches v2 level files in <dir> to add PushBlock ColorTag.\n");
+            return 1;
+        }
+        const char* dir = argv[2];
+        char path[512];
+        printf("=== v2 -> v2+colortag ===\n");
+        for (int i = 0; v2_level_names[i]; ++i) {
+            snprintf(path, sizeof(path), "%s/%s.level", dir, v2_level_names[i]);
+            MigrateLevelAddColorTag(path, path); // in-place
+        }
+        return 0;
+    }
+
+    // Original v1 -> v2 migration
     if (argc < 3) {
-        printf("Usage: migrate.exe <input_dir> <output_dir>\n");
-        printf("  Migrates all game levels from v1 to v2 format.\n");
+        printf("Usage:\n");
+        printf("  migrate.exe <input_dir> <output_dir>   (v1 -> v2)\n");
+        printf("  migrate.exe --add-colortag <dir>       (v2 -> v2+colortag)\n");
         return 1;
     }
     const char* in_dir  = argv[1];
     const char* out_dir = argv[2];
 
+    printf("=== v1 -> v2 ===\n");
     char in_path[512], out_path[512];
-    for (int i = 0; level_names[i]; ++i) {
-        snprintf(in_path,  sizeof(in_path),  "%s/%s.level", in_dir,  level_names[i]);
-        snprintf(out_path, sizeof(out_path), "%s/%s.level", out_dir, level_names[i]);
+    for (int i = 0; v1_level_names[i]; ++i) {
+        snprintf(in_path,  sizeof(in_path),  "%s/%s.level", in_dir,  v1_level_names[i]);
+        snprintf(out_path, sizeof(out_path), "%s/%s.level", out_dir, v1_level_names[i]);
         MigrateLevel(in_path, out_path);
     }
     return 0;

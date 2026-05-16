@@ -64,13 +64,29 @@ struct CircleInt {
 
 struct Color {
     uint8_t r, g, b, a;
+    
+    bool operator==(const Color& other) {
+        if (this->r != other.r) return false;
+        if (this->g != other.g) return false;
+        if (this->b != other.b) return false;
+        if (this->a != other.a) return false;
+        return true;
+    }
 };
 struct fColor {
     float r, g, b, a;
 };
 
-
-
+inline fColor ToFColor(const Color& color)
+{
+    constexpr float inv255 = 1.0f / 255.0f;
+    return {
+        color.r * inv255,
+        color.g * inv255,
+        color.b * inv255,
+        color.a * inv255
+    };
+}
 
 struct Transform {
     Vector3 position;

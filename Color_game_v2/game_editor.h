@@ -24,6 +24,7 @@ static void EditorDeleteEntity(int id) {
     comp_arrays.button_arr.Delete(id);
     comp_arrays.teleporter_arr.Delete(id);
     comp_arrays.color_changer_arr.Delete(id);
+    comp_arrays.color_tag_arr.Delete(id);
 }
 
 static void EditorNewLevel(int w, int h) {
@@ -154,7 +155,7 @@ void EditorUpdate(KeyboardState* ks, double dt) {
                 case 6:  EndgoalInit(id, &comp_arrays, {mx,my}); entity_map.SetID(mx,my,0,id); break;
                 case 7:  ButtonInit(id, &comp_arrays, {mx,my}, self_ch); entity_map.SetID(mx,my,0,id); break;
                 case 8:  TeleporterInit(id, &comp_arrays, {mx,my}, {255,250,230,255}, -1); entity_map.SetID(mx,my,0,id); break;
-                case 9:  ColorChangerInit(id, &comp_arrays, {mx,my}, {255,255,255,255}, ColorBlendMode::Blended, true); entity_map.SetID(mx,my,1,id); break;
+                case 9:  ColorChangerInit(id, &comp_arrays, {mx,my}, {255,255,255,255}, ColorBlendMode::Additive, true); entity_map.SetID(mx,my,1,id); break;
                 case 10:
                     PlayerInit(id, &comp_arrays, {mx,my}, Direction::Up, {255,255,255,255});
                     entity_map.SetID(mx,my,1,id);
@@ -182,6 +183,15 @@ void EditorUpdate(KeyboardState* ks, double dt) {
         if (id >= 0) {
             LaserEmitter* le = comp_arrays.laser_emitter_arr.Get(id);
             if (le) le->dir = (Direction)(((int)le->dir + 1) % 4);
+            
+            ColorChanger* cc = comp_arrays.color_changer_arr.Get(id);
+            if (cc) {
+                //if (cc->mode == ColorBlendMode::Additive) cc->mode = ColorBlendMode::Subtractive;
+                //else if (cc->mode == ColorBlendMode::Subtractive) cc->mode = ColorBlendMode::Blended;
+                //else if (cc->mode == ColorBlendMode::Blended) cc->mode = ColorBlendMode::Additive;
+                cc->mode = ColorBlendMode::Additive;
+            }
+            
         } else {
             id = entity_map.GetID(mx, my, 0);
             if (id >= 0) {
@@ -194,8 +204,8 @@ void EditorUpdate(KeyboardState* ks, double dt) {
     // ---- T + 0-7: set color ----
     if (ks->state.T && !ks->prev_state.T) {
         static const Color ed_colors[8] = {
-            {255,255,255,255},{0,0,0,255},{255,0,0,255},{0,255,0,255},
-            {0,0,255,255},{255,255,0,255},{255,0,255,255},{0,255,255,255}
+            DEFAULT_WHITE,DEFAULT_BLACK,DEFAULT_RED,DEFAULT_GREEN,
+            DEFAULT_BLUE,DEFAULT_YELLOW,DEFAULT_MAGENTA,DEFAULT_CYAN
         };
         int ci = ks->state.NUM0?0 : ks->state.NUM1?1 : ks->state.NUM2?2 : ks->state.NUM3?3 :
                  ks->state.NUM4?4 : ks->state.NUM5?5 : ks->state.NUM6?6 : ks->state.NUM7?7 : 0;
@@ -209,6 +219,7 @@ void EditorUpdate(KeyboardState* ks, double dt) {
             if (auto* lr = comp_arrays.laser_receiver_arr.Get(id1))         lr->accepted_color  = c;
             if (auto* cc = comp_arrays.color_changer_arr.Get(id1))          cc->main_color      = c;
             if (auto* pc = comp_arrays.grid_player_controlled_arr.Get(id1)) pc->color           = c;
+            if (auto* ct = comp_arrays.color_tag_arr.Get(id1))              ct->color           = c;
         }
         if (id0 >= 0) {
             if (auto* tp = comp_arrays.teleporter_arr.Get(id0)) tp->color = c;

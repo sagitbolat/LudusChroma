@@ -16,6 +16,9 @@ void ShaderSetFloat(GL_ID* shader, const char* name, float value);
 void ShaderSetVector(GL_ID* shader, const char* name, Vector2 v);
 void ShaderSetVector(GL_ID* shader, const char* name, Vector4 v);
 
+// SECTION: Change params
+void SetClearColor(fColor color);
+
 // SECTION: Rendering
 WindowContext* InitWindowContext(int width, int height, const char* window_name, fColor clear_color, bool fullscreen=false);
 void FreeWindowContext(WindowContext* window_context);
