@@ -35,8 +35,10 @@ void SwitchHiddenColor(EntityMap* entity_map, ComponentArrays* component_arrays)
                 // NOTE: No merge conflict at the cell
                 entity_map->SetID(grid_position->position, (int)grid_position->layer, entity_id);
             } else {
-                // NOTE: Merge conflict, don't insert.
+                // NOTE: Merge conflict, don't insert and abadon the color switch entirely.
                 // TODO: Maybe play around with what to do on merge conflict.
+                curr_hidden_color = prev_hidden_color;
+                return;
             }
         }
         // Logic Path for hiding entities
