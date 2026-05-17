@@ -169,12 +169,21 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
         CopyTransform(&t, rt->transform);
         t.position.y += rendering_top ? 0.5f : -0.5f;
         if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
-        DrawSprite(sprites[body_spr], t, main_camera);
-        t.position.z += 0.05f;
         ColorMul(shaders, player->color, !level_transitioning);
         DrawSprite(sprites[suit_spr], t, main_camera);
         ColorMulReset(shaders, !level_transitioning);
         UVReset(shaders);
+        if (rendering_top) {
+            t.position.z += 0.05f;
+            switch (player->upwards_direction) {
+                case Direction::Up:    t.rotation.z =   0.f; break;
+                case Direction::Right: t.rotation.z =  270.f; break;
+                case Direction::Down:  t.rotation.z = 180.f; break;
+                case Direction::Left:  t.rotation.z = 90.f; break;
+                default:               t.rotation.z =   0.f; break;
+            }
+            DrawSprite(sprites[body_spr], t, main_camera);
+        }
         goto done;
     }
 

@@ -183,6 +183,9 @@ void EditorUpdate(KeyboardState* ks, double dt) {
         if (id >= 0) {
             LaserEmitter* le = comp_arrays.laser_emitter_arr.Get(id);
             if (le) le->dir = (Direction)(((int)le->dir + 1) % 4);
+
+            GridPlayerControlled* pc = comp_arrays.grid_player_controlled_arr.Get(id);
+            if (pc) pc->upwards_direction = (Direction)(((int)pc->upwards_direction + 1) % 4);
             
             ColorChanger* cc = comp_arrays.color_changer_arr.Get(id);
             if (cc) {

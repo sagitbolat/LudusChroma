@@ -1,5 +1,5 @@
 // migrate_levels.cpp
-// Two migration modes:
+// Migration modes:
 //
 //   1. v1 -> v2 (original):
 //        migrate.exe <input_dir> <output_dir>
@@ -7,9 +7,11 @@
 //
 //   2. v2 -> v2+colortag (add ColorTag to PushBlocks):
 //        migrate.exe --add-colortag <dir>
-//      Rewrites every current v2 level file in-place, inserting a default
-//      white color field for each PushBlock.  All other entity types are
-//      byte-identical between old and new format.
+//      Inserts a default white color field for each PushBlock in-place.
+//
+//   3. v2+colortag -> v2+upwards-dir (add upwards_direction to Players):
+//        migrate.exe --add-upwards-dir <dir>
+//      Inserts Direction::Up (0) as upwards_direction for each Player in-place.
 //
 // Compile (standalone, no engine deps):
 //   g++ -o migrate.exe migrate_levels.cpp
@@ -212,9 +214,9 @@ static void MigrateLevel(const char* in_path, const char* out_path) {
 
         switch (v2_type) {
             case V2_PLAYER: {
-                // main_color is the suit color; orientation defaults to Up (0)
                 WriteColor4(e->main_color[0], e->main_color[1], e->main_color[2], e->main_color[3], fout);
-                WriteU32(0u, fout); // Direction::Up = 0
+                WriteU32(0u, fout); // orientation = Direction::Up
+                WriteU32(0u, fout); // upwards_direction = Direction::Up
                 break;
             }
             case V2_PUSH_BLOCK:
@@ -313,12 +315,31 @@ static const char* v2_level_names[] = {
 
 // ============================================================
 // Extra u32 count per v2 entity type AFTER [type][x][y]
-// (the old format, before ColorTag — PushBlock had 0 extras)
+// These represent the format at each migration boundary.
 // ============================================================
+
+// Format BEFORE --add-colortag (PushBlock had no color field)
 static int V2ExtraU32Count(uint32_t type) {
     switch (type) {
         case V2_PLAYER:        return 5;  // color[4] + orientation[1]
-        case V2_PUSH_BLOCK:    return 0;  // was empty; this is what we're patching
+        case V2_PUSH_BLOCK:    return 0;  // was empty; this is what --add-colortag patches
+        case V2_STATIC_BLOCK:  return 0;
+        case V2_EMITTER:       return 5;  // color[4] + dir[1]
+        case V2_RECEIVER:      return 14; // color[4] + channels[10]
+        case V2_DOOR:          return 11; // open_by_default[1] + channels[10]
+        case V2_ENDGOAL:       return 0;
+        case V2_BUTTON:        return 10; // channels[10]
+        case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
+        case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        default:               return 0;
+    }
+}
+
+// Format AFTER --add-colortag, BEFORE --add-upwards-dir (Player has no upwards_direction yet)
+static int V2PostColortagExtraU32Count(uint32_t type) {
+    switch (type) {
+        case V2_PLAYER:        return 5;  // color[4] + orientation[1]  <-- patched by --add-upwards-dir
+        case V2_PUSH_BLOCK:    return 4;  // color[4]
         case V2_STATIC_BLOCK:  return 0;
         case V2_EMITTER:       return 5;  // color[4] + dir[1]
         case V2_RECEIVER:      return 14; // color[4] + channels[10]
@@ -402,6 +423,73 @@ static void MigrateLevelAddColorTag(const char* in_path, const char* out_path) {
     printf("  OK  %-30s  (%d pushblocks patched)\n", out_path, pushblocks_patched);
 }
 
+// ============================================================
+// v2+colortag -> v2+upwards-dir  (inserts upwards_direction into every Player)
+// ============================================================
+static void MigrateLevelAddUpwardsDir(const char* in_path, const char* out_path) {
+    FILE* fin = fopen(in_path, "rb");
+    if (!fin) { printf("  SKIP (not found): %s\n", in_path); return; }
+
+    fseek(fin, 0, SEEK_END);
+    long file_size = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    uint8_t* buf = (uint8_t*)malloc(file_size);
+    fread(buf, 1, file_size, fin);
+    fclose(fin);
+
+    int pos = 0;
+    auto readU32 = [&]() -> uint32_t {
+        uint32_t v = 0;
+        memcpy(&v, buf + pos, 4);
+        pos += 4;
+        return v;
+    };
+
+    uint32_t width        = readU32();
+    uint32_t height       = readU32();
+    uint32_t num_floor    = readU32();
+    uint32_t num_entities = readU32();
+
+    FILE* fout = fopen(out_path, "wb");
+    if (!fout) {
+        printf("  FAIL (cannot write): %s\n", out_path);
+        free(buf);
+        return;
+    }
+
+    WriteU32(width,        fout);
+    WriteU32(height,       fout);
+    WriteU32(num_floor,    fout);
+    WriteU32(num_entities, fout);
+
+    int tilemap_bytes = (int)(width * height * 2);
+    fwrite(buf + pos, 1, tilemap_bytes, fout);
+    pos += tilemap_bytes;
+
+    int players_patched = 0;
+    for (uint32_t i = 0; i < num_entities; ++i) {
+        uint32_t type = readU32();
+        uint32_t x    = readU32();
+        uint32_t y    = readU32();
+        WriteU32(type, fout);
+        WriteU32(x,    fout);
+        WriteU32(y,    fout);
+
+        int extra = V2PostColortagExtraU32Count(type);
+        for (int e = 0; e < extra; ++e)
+            WriteU32(readU32(), fout);
+
+        if (type == V2_PLAYER) {
+            WriteU32(0u, fout); // upwards_direction = Direction::Up
+            ++players_patched;
+        }
+    }
+
+    fclose(fout);
+    free(buf);
+    printf("  OK  %-30s  (%d players patched)\n", out_path, players_patched);
+}
+
 int main(int argc, char* argv[]) {
     if (argc >= 2 && strcmp(argv[1], "--add-colortag") == 0) {
         if (argc < 3) {
@@ -419,11 +507,28 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    if (argc >= 2 && strcmp(argv[1], "--add-upwards-dir") == 0) {
+        if (argc < 3) {
+            printf("Usage: migrate.exe --add-upwards-dir <dir>\n");
+            printf("  Patches v2+colortag level files in <dir> to add Player upwards_direction.\n");
+            return 1;
+        }
+        const char* dir = argv[2];
+        char path[512];
+        printf("=== v2+colortag -> v2+upwards-dir ===\n");
+        for (int i = 0; v2_level_names[i]; ++i) {
+            snprintf(path, sizeof(path), "%s/%s.level", dir, v2_level_names[i]);
+            MigrateLevelAddUpwardsDir(path, path); // in-place
+        }
+        return 0;
+    }
+
     // Original v1 -> v2 migration
     if (argc < 3) {
         printf("Usage:\n");
-        printf("  migrate.exe <input_dir> <output_dir>   (v1 -> v2)\n");
-        printf("  migrate.exe --add-colortag <dir>       (v2 -> v2+colortag)\n");
+        printf("  migrate.exe <input_dir> <output_dir>      (v1 -> v2)\n");
+        printf("  migrate.exe --add-colortag <dir>          (v2 -> v2+colortag)\n");
+        printf("  migrate.exe --add-upwards-dir <dir>       (v2+colortag -> v2+upwards-dir)\n");
         return 1;
     }
     const char* in_dir  = argv[1];

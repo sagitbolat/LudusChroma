@@ -54,8 +54,9 @@ struct GridPosition {
 };
 
 struct GridPlayerControlled {
-    Direction orientation = Direction::Up;
-    Color     color       = { 255, 255, 255, 255 };
+    Direction orientation       = Direction::Up;
+    Color     color             = { 255, 255, 255, 255 };
+    Direction upwards_direction = Direction::Up; // determines the default upwards direction of this player entity
 };
 
 struct GridMover {
@@ -215,9 +216,9 @@ static inline RenderTransform MakeRenderTransform(Vector2Int pos, GridLayer laye
     return rt;
 }
 
-void PlayerInit(int id, ComponentArrays* ca, Vector2Int pos, Direction orientation, Color color) {
+void PlayerInit(int id, ComponentArrays* ca, Vector2Int pos, Direction orientation, Color color, Direction upwards_direction = Direction::Up) {
     ca->grid_position_arr.Insert(id, GridPosition{ pos, pos, GridLayer::EntityLayer });
-    ca->grid_player_controlled_arr.Insert(id, GridPlayerControlled{ orientation, color });
+    ca->grid_player_controlled_arr.Insert(id, GridPlayerControlled{ orientation, color, upwards_direction });
     ca->grid_mover_arr.Insert(id, GridMover{});
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::EntityLayer));
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::Absorb });

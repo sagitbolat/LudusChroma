@@ -88,6 +88,7 @@ static void WriteEntityRecord(int entity_id, ComponentArrays* ca, FILE* f) {
         WriteU32((uint32_t)pos.x, f); WriteU32((uint32_t)pos.y, f);
         WriteColor(pc->color, f);
         WriteU32((uint32_t)pc->orientation, f);
+        WriteU32((uint32_t)pc->upwards_direction, f);
     } else if (ca->door_arr.Get(entity_id)) {
         Door*          door = ca->door_arr.Get(entity_id);
         SignalChannel* sc   = ca->signal_channel_arr.Get(entity_id);
@@ -198,9 +199,10 @@ static void ReadEntityRecord(
 
     switch (type) {
         case EntityTypeV2::Player: {
-            Color     color       = ReadColor(f);
-            Direction orientation = (Direction)ReadU32(f);
-            PlayerInit(id, ca, { x, y }, orientation, color);
+            Color     color             = ReadColor(f);
+            Direction orientation       = (Direction)ReadU32(f);
+            Direction upwards_direction = (Direction)ReadU32(f);
+            PlayerInit(id, ca, { x, y }, orientation, color, upwards_direction);
             entity_map->SetID(x, y, (int)GridLayer::EntityLayer, id);
             player_ids[(*num_players)++] = id;
             break;
