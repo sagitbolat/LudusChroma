@@ -31,7 +31,7 @@ void SwitchHiddenColor(EntityMap* entity_map, ComponentArrays* component_arrays)
         if (was_hidden && !is_hidden) {
             int existing_entity_id = entity_map->GetID(grid_position->position, (int)grid_position->layer);
 
-            if (existing_entity_id == -1) {
+            if (existing_entity_id < 0) {
                 // NOTE: No merge conflict at the cell
                 entity_map->SetID(grid_position->position, (int)grid_position->layer, entity_id);
             } else {
