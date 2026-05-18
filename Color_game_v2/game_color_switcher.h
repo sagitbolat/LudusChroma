@@ -4,13 +4,12 @@
 
 #include "entity.h"
 Color hidden_color_array[] = {
-    DEFAULT_BLACK,
     DEFAULT_RED,
-    DEFAULT_GREEN,
-    DEFAULT_BLUE/*,
     DEFAULT_YELLOW,
-    DEFAULT_MAGENTA,
-    DEFAULT_CYAN*/
+    DEFAULT_GREEN,
+    DEFAULT_CYAN,
+    DEFAULT_BLUE,
+    DEFAULT_MAGENTA
 };
 
 uint8_t curr_hidden_color = 0;
@@ -18,7 +17,7 @@ uint8_t curr_hidden_color = 0;
 void SwitchHiddenColor(EntityMap* entity_map, ComponentArrays* component_arrays) {
 
     int prev_hidden_color = curr_hidden_color;
-    curr_hidden_color = (curr_hidden_color + 1) % 4; // TODO: change this to 6
+    curr_hidden_color = (curr_hidden_color + 1) % 6; // TODO: change this to 6
 
     for (const int entity_id : component_arrays->color_tag_arr.dense_ids) {
         ColorTag* color_tag = component_arrays->color_tag_arr.Get(entity_id);

@@ -1,0 +1,54 @@
+======================================== 
+===== Build started at 14:41:51.60 ===== 
+======================================== 
+ 
+[14:41:51.61] +++++ Compiling Project +++++ 
+ 
+In file included from ..\entity_render.h:5,
+                 from ..\game.cpp:36:
+..\game_color_switcher.h:12:5: error: expected '}' before 'DEFAULT_BLUE'
+     DEFAULT_BLUE,
+     ^~~~~~~~~~~~
+..\game_color_switcher.h:6:30: note: to match this '{'
+ Color hidden_color_array[] = {
+                              ^
+..\game_color_switcher.h:12:5: error: expected ',' or ';' before 'DEFAULT_BLUE'
+     DEFAULT_BLUE,
+     ^~~~~~~~~~~~
+..\game_color_switcher.h:14:1: error: expected declaration before '}' token
+ };
+ ^
+In file included from ..\../Engine/SDL_sky.cpp:14,
+                 from ..\game.cpp:4:
+..\../Engine/skyengine.cpp:16:13: warning: 'void Init(int*, int*, float*, bool*, fColor*)' declared 'static' but never defined [-Wunused-function]
+ static void Init(int* width, int* height, float* width_in_world_space, bool* is_fullscreen, fColor* clear_color);
+             ^~~~
+..\../Engine/skyengine.cpp:17:13: warning: 'void Awake(GameMemory*)' declared 'static' but never defined [-Wunused-function]
+ static void Awake(GameMemory* game_memory);
+             ^~~~~
+..\../Engine/skyengine.cpp:18:13: warning: 'void Start(GameState*, KeyboardState*)' declared 'static' but never defined [-Wunused-function]
+ static void Start(GameState* game_state, KeyboardState* keyboard_state);
+             ^~~~~
+..\../Engine/skyengine.cpp:19:13: warning: 'void Update(GameState*, KeyboardState*, double)' declared 'static' but never defined [-Wunused-function]
+ static void Update(GameState* game_state, KeyboardState* keyboard_state, double delta_time);
+             ^~~~~~
+..\../Engine/skyengine.cpp:20:13: warning: 'void UserFree()' declared 'static' but never defined [-Wunused-function]
+ static void UserFree();
+             ^~~~~~~~
+..\../Engine/skyengine.cpp:20:13: warning: 'void UserFree()' used but never defined
+..\../Engine/skyengine.cpp:17:13: warning: 'void Awake(GameMemory*)' used but never defined
+ static void Awake(GameMemory* game_memory);
+             ^~~~~
+..\../Engine/skyengine.cpp:16:13: warning: 'void Init(int*, int*, float*, bool*, fColor*)' used but never defined
+ static void Init(int* width, int* height, float* width_in_world_space, bool* is_fullscreen, fColor* clear_color);
+             ^~~~
+..\../Engine/skyengine.cpp:19:13: warning: 'void Update(GameState*, KeyboardState*, double)' used but never defined
+ static void Update(GameState* game_state, KeyboardState* keyboard_state, double delta_time);
+             ^~~~~~
+..\../Engine/skyengine.cpp:18:13: warning: 'void Start(GameState*, KeyboardState*)' used but never defined
+ static void Start(GameState* game_state, KeyboardState* keyboard_state);
+             ^~~~~
+ 
+=======================================
+===== Build failed at 14:41:52.03 =====
+=======================================
