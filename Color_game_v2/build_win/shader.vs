@@ -4,6 +4,7 @@ layout (location = 1) in vec2 a_texture_coord;
 layout (location = 2) in vec3 a_offset;
 out vec2 tex_coord;
 out vec4 color_multiplier;
+out vec2 v_screen_uv;
 uniform mat4 transform;
 uniform mat4 view;
 uniform vec4 i_color_multiplier;
@@ -13,6 +14,7 @@ uniform vec2 uv_offset = vec2(0.0, 0.0); // Offset is from bottom left toward to
 void main()
 {
     gl_Position = transform * vec4(a_pos.x + a_offset.x, a_pos.y + a_offset.y, a_pos.z + a_offset.z, 1.0);
+    v_screen_uv = gl_Position.xy * 0.5 + 0.5;
     float tex_height = top_right_uv.y - bot_left_uv.y;
     float tex_width = top_right_uv.x - bot_left_uv.x;
     vec2 tex_coord_scaled = vec2(a_texture_coord.x * tex_width, a_texture_coord.y * tex_height);

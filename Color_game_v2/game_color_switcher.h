@@ -20,20 +20,15 @@ const float SHAKE_DURATION = 400.f;
 struct ShakeEntry { int entity_id; float timer; };
 ShakeEntry shake_entries[MAX_SHAKE_ENTRIES] = {};
 
-void SwitchHiddenColor(EntityMap* entity_map, ComponentArrays* component_arrays) {
-    int prev_color = curr_hidden_color;
-    int next_color = (curr_hidden_color + 1) % 6;
-
-    // Dry-run: collect all conflicts before committing anything
+// Returns true if the switch can proceed (no conflicts). Adds shakes for blockers.
+bool CheckHiddenColorSwitch(EntityMap* entity_map, ComponentArrays* component_arrays) {
+    int prev_color    = curr_hidden_color;
     bool has_conflict = false;
     for (const int entity_id : component_arrays->color_tag_arr.dense_ids) {
         ColorTag*     ct = component_arrays->color_tag_arr.Get(entity_id);
         GridPosition* gp = component_arrays->grid_position_arr.Get(entity_id);
         if (!gp) continue;
-
-        bool was_hidden = (ct->color == hidden_color_array[prev_color]);
-        if (!was_hidden) continue;
-
+        if (ct->color != hidden_color_array[prev_color]) continue;
         int occupant = entity_map->GetID(gp->position, (int)gp->layer);
         if (occupant >= 0 && occupant != entity_id) {
             has_conflict = true;
@@ -45,9 +40,12 @@ void SwitchHiddenColor(EntityMap* entity_map, ComponentArrays* component_arrays)
             }
         }
     }
-    if (has_conflict) return;
+    return !has_conflict;
+}
 
-    // No conflicts — commit the switch
+void CommitHiddenColorSwitch(EntityMap* entity_map, ComponentArrays* component_arrays) {
+    int prev_color = curr_hidden_color;
+    int next_color = (curr_hidden_color + 1) % 7;
     curr_hidden_color = next_color;
 
     for (const int entity_id : component_arrays->color_tag_arr.dense_ids) {

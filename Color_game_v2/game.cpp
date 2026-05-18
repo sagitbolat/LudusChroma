@@ -97,6 +97,15 @@ Sprite act1_text;
 Sprite act1_1_text;
 Sprite act2_text;
 
+GL_ID* iris_shaders          = nullptr;
+Sprite iris_sprite           = {};
+Color  iris_overlay_color    = {};
+Color  iris_masked_tag_color = {};
+Color  iris_revealing_color  = {};
+float  iris_timer            = 0.f;
+bool   iris_expanding        = false;
+const float IRIS_DURATION    = 400.f;
+
 static bool editor_mode  = false;
 static char ed_name[256] = "";
 static int  ed_level_idx = -1;
@@ -212,8 +221,9 @@ void Awake(GameMemory* gm) {
         if (base) { _chdir(base); SDL_free(base); }
     }
 
-    shaders     = ShaderInit("shader.vs", "shader.fs");
-    gpu_buffers = InitGPUBuffers();
+    shaders      = ShaderInit("shader.vs", "shader.fs");
+    iris_shaders = ShaderInit("iris.vs",   "iris.fs");
+    gpu_buffers  = InitGPUBuffers();
     ShaderSetVector(shaders, "i_color_multiplier", Vector4{ 1.f, 1.f, 1.f, 1.f });
 
     scene_manager.InitManager(3);
@@ -239,7 +249,8 @@ void Awake(GameMemory* gm) {
     act1_1_text       = LoadSprite("assets/act1_1.png",           shaders, gpu_buffers);
     act2_text         = LoadSprite("assets/act1.png",             shaders, gpu_buffers);
 
-    emission_sprite   = LoadSprite("assets/emission.png",         shaders, gpu_buffers);
+    emission_sprite   = LoadSprite("assets/emission.png",         shaders,      gpu_buffers);
+    iris_sprite       = LoadSprite("assets/emission.png",         iris_shaders, gpu_buffers);
     wire_sprite       = LoadSprite("assets/wire.png",             shaders, gpu_buffers);
 
     Sprite tmp[30] = {
@@ -302,4 +313,5 @@ void UserFree() {
     free(undo_list);         undo_list         = nullptr;
     FreeGPUBuffers(gpu_buffers);
     FreeShaders(shaders);
+    FreeShaders(iris_shaders);
 }

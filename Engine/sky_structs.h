@@ -72,6 +72,9 @@ struct Color {
         if (this->a != other.a) return false;
         return true;
     }
+    bool operator!=(const Color& other) {
+        return !(*this == other);
+    }
 };
 struct fColor {
     float r, g, b, a;

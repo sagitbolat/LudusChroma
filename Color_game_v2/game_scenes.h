@@ -262,9 +262,15 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             --curr_level_index;
         }
 
-        if (ks->state.C && !ks->prev_state.C) {
-            SwitchHiddenColor(&entity_map, &comp_arrays);
-            SetClearColor(ToFColor(hidden_color_array[curr_hidden_color]));
+        if (ks->state.C && !ks->prev_state.C && iris_timer <= 0.f) {
+            if (CheckHiddenColorSwitch(&entity_map, &comp_arrays)) {
+                uint8_t next_idx      = (curr_hidden_color + 1) % 7;
+                iris_overlay_color    = hidden_color_array[next_idx];
+                iris_masked_tag_color = hidden_color_array[next_idx];
+                iris_revealing_color  = hidden_color_array[curr_hidden_color];
+                iris_expanding        = true;
+                iris_timer            = IRIS_DURATION;
+            }
         }
 
         for (int p = 0; p < num_players; ++p) {
@@ -303,6 +309,18 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             shake_entries[s].timer -= (float)dt;
             if (shake_entries[s].timer <= 0.f)
                 shake_entries[s] = { -1, 0.f };
+        }
+    }
+
+    // ---- Iris timer ----
+    if (iris_timer > 0.f) {
+        iris_timer -= (float)dt;
+        if (iris_timer <= 0.f) {
+            iris_timer            = 0.f;
+            CommitHiddenColorSwitch(&entity_map, &comp_arrays);
+            SetClearColor(ToFColor(hidden_color_array[curr_hidden_color]));
+            iris_masked_tag_color = {};
+            iris_revealing_color  = {};
         }
     }
 

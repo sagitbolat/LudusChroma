@@ -51,6 +51,21 @@ static void DrawWires(int door_id) {
 }
 
 
+static bool SetEntityIrisMask(int id) {
+    if (iris_timer <= 0.f) return false;
+    ColorTag* ct = comp_arrays.color_tag_arr.Get(id);
+    if (!ct) return false;
+    if (!(ct->color == iris_masked_tag_color)) return false;
+    float progress = iris_timer / IRIS_DURATION;
+    float radius   = 1.f - progress;
+    ShaderSetFloat(shaders, "iris_mask_enabled", 1.f);
+    ShaderSetFloat(shaders, "iris_mask_radius",  radius);
+    ShaderSetFloat(shaders, "iris_mask_aspect",  (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT);
+    ShaderSetFloat(shaders, "iris_mask_invert",  0.f);
+    return true;
+}
+
+
 // ============================================================
 // SECTION: Game render
 // ============================================================
@@ -100,7 +115,9 @@ static void GameRender() {
             if (id < 0) continue;
             Door* door = comp_arrays.door_arr.Get(id);
             SetEntityZ(id, 0.f + (door ? 0.25f : 0.f), y);
+            bool im = SetEntityIrisMask(id);
             EntityRender(id, &comp_arrays, shaders, sprites, false, level_transitioning);
+            if (im) ShaderSetFloat(shaders, "iris_mask_enabled", 0.f);
         }
 
     // ---- Pass 3: Ground layer top halves — skip closed doors ----
@@ -111,7 +128,9 @@ static void GameRender() {
             Door* door = comp_arrays.door_arr.Get(id);
             if (door && !door->is_open) continue;
             SetEntityZ(id, 0.f + (door ? 0.25f : 0.f), y);
+            bool im = SetEntityIrisMask(id);
             EntityRender(id, &comp_arrays, shaders, sprites, true, level_transitioning);
+            if (im) ShaderSetFloat(shaders, "iris_mask_enabled", 0.f);
             if (door) DrawWires(id);
         }
 
@@ -123,7 +142,9 @@ static void GameRender() {
             Door* door = comp_arrays.door_arr.Get(id);
             if (door && !door->is_open) continue;
             SetEntityZ(id, 1.f + (door ? 0.25f : 0.f), y);
+            bool im = SetEntityIrisMask(id);
             EntityRender(id, &comp_arrays, shaders, sprites, false, level_transitioning);
+            if (im) ShaderSetFloat(shaders, "iris_mask_enabled", 0.f);
         }
 
     // ---- Pass 5: Emission map ----
@@ -161,7 +182,46 @@ static void GameRender() {
             if (id < 0) continue;
             Door* door = comp_arrays.door_arr.Get(id);
             SetEntityZ(id, 1.f + (door ? 0.25f : 0.f), y);
+            bool im = SetEntityIrisMask(id);
             EntityRender(id, &comp_arrays, shaders, sprites, true, level_transitioning);
+            if (im) ShaderSetFloat(shaders, "iris_mask_enabled", 0.f);
             if (door) DrawWires(id);
         }
+
+    // ---- Iris overlay: draw new background color inside the growing circle ----
+    if (iris_timer > 0.f) {
+        float progress = iris_timer / IRIS_DURATION;
+        float radius   = 1.f - progress;
+        float aspect   = (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT;
+        ShaderUse(iris_shaders);
+        ShaderSetVector(iris_shaders, "iris_color",   Vec4(iris_overlay_color));
+        ShaderSetFloat (iris_shaders, "iris_radius",  radius);
+        ShaderSetFloat (iris_shaders, "aspect_ratio", aspect);
+        ShaderSetFloat (iris_shaders, "iris_invert",  0.f);
+        Transform iris_t{};
+        iris_t.scale = { 1.f, 1.f, 1.f };
+        DrawSprite(iris_sprite, iris_t, main_camera);
+        ShaderUse(shaders);
+        ShaderSetVector(shaders, "i_color_multiplier", Vector4{ 1.f, 1.f, 1.f, 1.f });
+        UVReset(shaders);
+
+        // ---- Ghost pass: render entities being revealed, visible only inside the circle ----
+        for (int i = 0; i < level_info.num_entities; ++i) {
+            ColorTag* ct = comp_arrays.color_tag_arr.Get(i);
+            if (!ct || !(ct->color == iris_revealing_color)) continue;
+            GridPosition* gp = comp_arrays.grid_position_arr.Get(i);
+            if (!gp) continue;
+            if (entity_map.GetID(gp->position, (int)gp->layer) == i) continue;
+            float base_z = (gp->layer == GridLayer::EntityLayer) ? 1.f : 0.f;
+            ShaderSetFloat(shaders, "iris_mask_enabled", 1.f);
+            ShaderSetFloat(shaders, "iris_mask_radius",  radius);
+            ShaderSetFloat(shaders, "iris_mask_aspect",  aspect);
+            ShaderSetFloat(shaders, "iris_mask_invert",  1.f);
+            SetEntityZ(i, base_z, gp->position.y);
+            EntityRender(i, &comp_arrays, shaders, sprites, false, level_transitioning, true);
+            SetEntityZ(i, base_z, gp->position.y);
+            EntityRender(i, &comp_arrays, shaders, sprites, true, level_transitioning, true);
+            ShaderSetFloat(shaders, "iris_mask_enabled", 0.f);
+        }
+    }
 }

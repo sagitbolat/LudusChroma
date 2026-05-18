@@ -136,10 +136,10 @@ void EmissionRender(int x, int y, EmissionMap& emission_map, Sprite emission_spr
 // ============================================================
 
 void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Sprite* sprites,
-                  bool rendering_top = true, bool level_transitioning = false) {
+                  bool rendering_top = true, bool level_transitioning = false, bool force_render = false) {
 
     // If Entity is hidden due to the clear color mechanic, skip rendering it.
-    if (isHidden(entity_id, ca)) return;
+    if (!force_render && isHidden(entity_id, ca)) return;
     
     RenderTransform* rt = ca->render_transform_arr.Get(entity_id);
     if (!rt) return;
