@@ -153,6 +153,17 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
         z_bumped = true;
     }
 
+    // Shake offset for merge-conflict visual feedback
+    float shake_x = 0.f;
+    for (int s = 0; s < MAX_SHAKE_ENTRIES; ++s) {
+        if (shake_entries[s].entity_id == entity_id && shake_entries[s].timer > 0.f) {
+            float t = shake_entries[s].timer;
+            shake_x = sinf(t * 0.05f) * 0.12f * (t / SHAKE_DURATION);
+            break;
+        }
+    }
+    if (shake_x != 0.f) rt->transform.position.x += shake_x;
+
     // ---- Player ----
     GridPlayerControlled* player = ca->grid_player_controlled_arr.Get(entity_id);
     if (player) {
@@ -411,5 +422,6 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
     }
 
 done:
+    if (shake_x != 0.f) rt->transform.position.x -= shake_x;
     if (z_bumped) rt->transform.position.z -= 1.3f;
 }

@@ -4,6 +4,7 @@
 
 #include "entity.h"
 Color hidden_color_array[] = {
+    DEFAULT_BLACK,
     DEFAULT_RED,
     DEFAULT_YELLOW,
     DEFAULT_GREEN,
@@ -14,44 +15,57 @@ Color hidden_color_array[] = {
 
 uint8_t curr_hidden_color = 0;
 
+#define MAX_SHAKE_ENTRIES 16
+const float SHAKE_DURATION = 400.f;
+struct ShakeEntry { int entity_id; float timer; };
+ShakeEntry shake_entries[MAX_SHAKE_ENTRIES] = {};
+
 void SwitchHiddenColor(EntityMap* entity_map, ComponentArrays* component_arrays) {
+    int prev_color = curr_hidden_color;
+    int next_color = (curr_hidden_color + 1) % 6;
 
-    int prev_hidden_color = curr_hidden_color;
-    curr_hidden_color = (curr_hidden_color + 1) % 6; // TODO: change this to 6
-
+    // Dry-run: collect all conflicts before committing anything
+    bool has_conflict = false;
     for (const int entity_id : component_arrays->color_tag_arr.dense_ids) {
-        ColorTag* color_tag = component_arrays->color_tag_arr.Get(entity_id);
-        GridPosition* grid_position = component_arrays->grid_position_arr.Get(entity_id);
+        ColorTag*     ct = component_arrays->color_tag_arr.Get(entity_id);
+        GridPosition* gp = component_arrays->grid_position_arr.Get(entity_id);
+        if (!gp) continue;
 
-        bool was_hidden = (color_tag->color == hidden_color_array[prev_hidden_color]);
-        bool is_hidden = (color_tag->color == hidden_color_array[curr_hidden_color]);
+        bool was_hidden = (ct->color == hidden_color_array[prev_color]);
+        if (!was_hidden) continue;
 
-        // Logic path for un-hiding entities
-        if (was_hidden && !is_hidden) {
-            int existing_entity_id = entity_map->GetID(grid_position->position, (int)grid_position->layer);
-
-            if (existing_entity_id < 0) {
-                // NOTE: No merge conflict at the cell
-                entity_map->SetID(grid_position->position, (int)grid_position->layer, entity_id);
-            } else {
-                // NOTE: Merge conflict, don't insert and abadon the color switch entirely.
-                // TODO: Maybe play around with what to do on merge conflict.
-                curr_hidden_color = prev_hidden_color;
-                return;
+        int occupant = entity_map->GetID(gp->position, (int)gp->layer);
+        if (occupant >= 0 && occupant != entity_id) {
+            has_conflict = true;
+            for (int s = 0; s < MAX_SHAKE_ENTRIES; ++s) {
+                if (shake_entries[s].timer <= 0.f) {
+                    shake_entries[s] = { occupant, SHAKE_DURATION };
+                    break;
+                }
             }
         }
-        // Logic Path for hiding entities
-        if (!was_hidden && is_hidden) {
-            int existing_entity_id = entity_map->GetID(grid_position->position, (int)grid_position->layer);
-            
-            // NOTE: this should always fire.
-            if (existing_entity_id == entity_id)
-                entity_map->SetID(grid_position->position, (int)grid_position->layer, -1);
-        }
-
-
     }
+    if (has_conflict) return;
 
+    // No conflicts — commit the switch
+    curr_hidden_color = next_color;
+
+    for (const int entity_id : component_arrays->color_tag_arr.dense_ids) {
+        ColorTag*     ct = component_arrays->color_tag_arr.Get(entity_id);
+        GridPosition* gp = component_arrays->grid_position_arr.Get(entity_id);
+        if (!gp) continue;
+
+        bool was_hidden = (ct->color == hidden_color_array[prev_color]);
+        bool is_hidden  = (ct->color == hidden_color_array[next_color]);
+
+        if (was_hidden && !is_hidden) {
+            entity_map->SetID(gp->position, (int)gp->layer, entity_id);
+        } else if (!was_hidden && is_hidden) {
+            int occupant = entity_map->GetID(gp->position, (int)gp->layer);
+            if (occupant == entity_id)
+                entity_map->SetID(gp->position, (int)gp->layer, -1);
+        }
+    }
 }
 
 bool isHidden(int entity_id, ComponentArrays* component_arrays) {

@@ -297,6 +297,15 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
 
     GameRender();
 
+    // ---- Shake timers ----
+    for (int s = 0; s < MAX_SHAKE_ENTRIES; ++s) {
+        if (shake_entries[s].timer > 0.f) {
+            shake_entries[s].timer -= (float)dt;
+            if (shake_entries[s].timer <= 0.f)
+                shake_entries[s] = { -1, 0.f };
+        }
+    }
+
     // ---- Per-frame ECS updates ----
     ClearFrameState(&comp_arrays);
     for (int i = 0; i < level_info.num_entities; ++i) { 
