@@ -209,29 +209,28 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
                     GridMover* gm_p = comp_arrays.grid_mover_arr.Get(pid);
                     if (gm_p && gm_p->moving) continue; // already pushed this frame, skip
 
-                    // NOTE: handle the different player directions
                     Direction upwards_direction = comp_arrays.grid_player_controlled_arr.Get(pid)->upwards_direction;
-                    int prev_x = dir.x;
+                    Vector2Int pdir = dir;
                     switch(upwards_direction){
                         case Direction::Up:
                             break;
                         case Direction::Down:
-                            dir.y *= -1;
-                            dir.x *= -1;
+                            pdir.x = -dir.x;
+                            pdir.y = -dir.y;
                             break;
                         case Direction::Left:
-                            dir.x = dir.y * -1;
-                            dir.y = prev_x;    
+                            pdir.x = -dir.y;
+                            pdir.y =  dir.x;
                             break;
                         case Direction::Right:
-                            dir.x = dir.y;
-                            dir.y = prev_x * -1;    
+                            pdir.x =  dir.y;
+                            pdir.y = -dir.x;
                             break;
                         default:
                             break;
                     }
 
-                    bool moved = EntityMove(pid, dir, tilemap, entity_map, &comp_arrays, MAX_ENTITIES);
+                    bool moved = EntityMove(pid, pdir, tilemap, entity_map, &comp_arrays, MAX_ENTITIES);
                     if (moved) {
                         any_moved = true;
                         GridPlayerControlled* pc = comp_arrays.grid_player_controlled_arr.Get(pid);
