@@ -201,37 +201,118 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             }
 
             auto try_move_all = [&](Vector2Int dir, Direction face) {
-                UndoSaveStep();
-                bool any_moved = false;
+                auto local_dir = [&](int pid) -> Vector2Int {
+                    Direction up = comp_arrays.grid_player_controlled_arr.Get(pid)->upwards_direction;
+                    switch (up) {
+                        case Direction::Down:  return { -dir.x, -dir.y };
+                        case Direction::Left:  return { -dir.y,  dir.x };
+                        case Direction::Right: return {  dir.y, -dir.x };
+                        default:               return dir;
+                    }
+                };
+
+                // ---- Phase 1: collect active players and their intended targets ----
+                struct Intent { int pid; Vector2Int target; Vector2Int pdir; };
+                Intent intents[MAX_NUM_PLAYERS];
+                int    n = 0;
                 for (int p = 0; p < num_players; ++p) {
                     int pid = player_ids[p];
                     if (isHidden(pid, &comp_arrays)) continue;
-                    GridMover* gm_p = comp_arrays.grid_mover_arr.Get(pid);
-                    if (gm_p && gm_p->moving) continue; // already pushed this frame, skip
+                    GridMover*    gm_p = comp_arrays.grid_mover_arr.Get(pid);
+                    if (gm_p && gm_p->moving) continue;
+                    GridPosition* gp = comp_arrays.grid_position_arr.Get(pid);
+                    if (!gp) continue;
+                    Vector2Int pdir = local_dir(pid);
+                    intents[n++] = { pid, { gp->position.x + pdir.x, gp->position.y + pdir.y }, pdir };
+                }
 
-                    Direction upwards_direction = comp_arrays.grid_player_controlled_arr.Get(pid)->upwards_direction;
-                    Vector2Int pdir = dir;
-                    switch(upwards_direction){
-                        case Direction::Up:
-                            break;
-                        case Direction::Down:
-                            pdir.x = -dir.x;
-                            pdir.y = -dir.y;
-                            break;
-                        case Direction::Left:
-                            pdir.x = -dir.y;
-                            pdir.y =  dir.x;
-                            break;
-                        case Direction::Right:
-                            pdir.x =  dir.y;
-                            pdir.y = -dir.x;
-                            break;
-                        default:
-                            break;
+                // ---- Phase 2: conflict detection ----
+                bool blocked[MAX_NUM_PLAYERS] = {};
+
+                // Same-cell: two players targeting the same position
+                for (int i = 0; i < n; ++i)
+                    for (int j = i + 1; j < n; ++j)
+                        if (intents[i].target.x == intents[j].target.x &&
+                            intents[i].target.y == intents[j].target.y)
+                            blocked[i] = blocked[j] = true;
+
+                // Head-on: A targets B's cell and B targets A's cell
+                for (int i = 0; i < n; ++i) {
+                    if (blocked[i]) continue;
+                    GridPosition* gp_i = comp_arrays.grid_position_arr.Get(intents[i].pid);
+                    for (int j = i + 1; j < n; ++j) {
+                        if (blocked[j]) continue;
+                        GridPosition* gp_j = comp_arrays.grid_position_arr.Get(intents[j].pid);
+                        if (!gp_i || !gp_j) continue;
+                        if (intents[i].target.x == gp_j->position.x &&
+                            intents[i].target.y == gp_j->position.y &&
+                            intents[j].target.x == gp_i->position.x &&
+                            intents[j].target.y == gp_i->position.y)
+                            blocked[i] = blocked[j] = true;
                     }
+                }
 
-                    bool moved = EntityMove(pid, pdir, tilemap, entity_map, &comp_arrays, MAX_ENTITIES);
-                    if (moved) {
+                // ---- Phase 3: dependency ordering ----
+                // dep[i] = index of the player that i must wait for (-1 if none)
+                int dep[MAX_NUM_PLAYERS];
+                for (int i = 0; i < n; ++i) {
+                    dep[i] = -1;
+                    if (blocked[i]) continue;
+                    for (int j = 0; j < n; ++j) {
+                        if (i == j || blocked[j]) continue;
+                        GridPosition* gp_j = comp_arrays.grid_position_arr.Get(intents[j].pid);
+                        if (!gp_j) continue;
+                        if (intents[i].target.x == gp_j->position.x &&
+                            intents[i].target.y == gp_j->position.y) {
+                            dep[i] = j;
+                            break;
+                        }
+                    }
+                }
+
+                // Detect cycles and block every player in them
+                for (int i = 0; i < n; ++i) {
+                    if (blocked[i] || dep[i] < 0) continue;
+                    int chain[MAX_NUM_PLAYERS];
+                    int clen = 0;
+                    int cur  = i;
+                    while (cur >= 0 && !blocked[cur]) {
+                        bool seen = false;
+                        for (int k = 0; k < clen && !seen; ++k)
+                            if (chain[k] == cur) seen = true;
+                        if (seen) {
+                            for (int k = 0; k < clen; ++k) blocked[chain[k]] = true;
+                            break;
+                        }
+                        chain[clen++] = cur;
+                        cur = dep[cur];
+                    }
+                }
+
+                // Topological sort: repeatedly emit players whose dependency is resolved
+                int  order[MAX_NUM_PLAYERS];
+                int  ocount = 0;
+                bool in_order[MAX_NUM_PLAYERS] = {};
+                for (bool progress = true; progress; ) {
+                    progress = false;
+                    for (int i = 0; i < n; ++i) {
+                        if (blocked[i] || in_order[i]) continue;
+                        int d = dep[i];
+                        if (d < 0 || blocked[d] || in_order[d]) {
+                            order[ocount++] = i;
+                            in_order[i]     = true;
+                            progress        = true;
+                        }
+                    }
+                }
+
+                // ---- Phase 4: commit moves in dependency order ----
+                UndoSaveStep();
+                bool any_moved = false;
+                for (int o = 0; o < ocount; ++o) {
+                    int i   = order[o];
+                    int pid = intents[i].pid;
+                    if (EntityMove(pid, intents[i].pdir, tilemap, entity_map, &comp_arrays, MAX_ENTITIES)) {
                         any_moved = true;
                         GridPlayerControlled* pc = comp_arrays.grid_player_controlled_arr.Get(pid);
                         if (pc) pc->orientation = face;
