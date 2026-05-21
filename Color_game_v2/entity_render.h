@@ -205,7 +205,7 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
         } else {
             // Sprite is 2 units tall: top 1 unit = character, next 0.5 = sidewall, bottom 0.5 = empty padding.
             // Empty padding occupies v=[0, 0.25], so the clip range that covers real content is [0.25, 1.0].
-            float clip_v = pos_dir ? (1.0f - t * 0.75f) : (0.25f + t * 0.75f);
+            float clip_v = pos_dir ? (1.0f - t * 0.5f) : (0.5f + t * 0.5f);
             if (!exit_render) {
                 vis_min = pos_dir ? 0.f    : clip_v;
                 vis_max = pos_dir ? clip_v : 1.f;
@@ -388,8 +388,11 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
     {
         Teleporter* tp = ca->teleporter_arr.Get(entity_id);
         if (tp) {
+            Transform t{};
+            CopyTransform(&t, rt->transform);
+            t.scale.y = 2.f;
             ColorMul(shaders, tp->color, !level_transitioning);
-            DrawSprite(sprites[SPR_TELEPORTER], rt->transform, main_camera);
+            DrawSprite(sprites[SPR_TELEPORTER], t, main_camera);
             ColorMulReset(shaders, !level_transitioning);
             goto done;
         }

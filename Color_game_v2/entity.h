@@ -45,7 +45,7 @@ enum class Direction      : uint8_t { Up, Right, Down, Left, Neutral };
 enum class ColorBlendMode : uint8_t { Blended, Additive, Subtractive };
 enum class GridLayer      : uint8_t { GroundLayer, EntityLayer };
 
-#define MOVE_SPEED 2.0f  // seconds per block
+#define MOVE_SPEED 0.2f  // seconds per block
 
 struct GridPosition {
     Vector2Int position;
