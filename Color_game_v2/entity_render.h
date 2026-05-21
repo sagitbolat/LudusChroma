@@ -129,6 +129,40 @@ void EmissionRender(int x, int y, EmissionMap& emission_map, Sprite emission_spr
 
 
 // ============================================================
+// Portal clip helpers — applied per draw call during teleport animations.
+// axis=0: clip along X (horizontal movement). axis=1: clip along Y (vertical movement).
+// vis_min/vis_max: visible fraction of the full sprite in [0,1] sprite space.
+// For Y-axis clips, each half-sprite draw covers either [0,0.5] or [0.5,1] of the sprite,
+// so the clip range is remapped into that half's quad UV [0,1] space.
+// ============================================================
+
+static void SetPortalClipForHalf(GL_ID* sh, int axis, float vis_min, float vis_max, bool rendering_top) {
+    ShaderSetFloat(sh, "portal_clip_enabled", 1.f);
+    ShaderSetFloat(sh, "portal_clip_axis",    (float)axis);
+    if (axis == 0) {
+        ShaderSetFloat(sh, "portal_clip_uv_min", vis_min);
+        ShaderSetFloat(sh, "portal_clip_uv_max", vis_max);
+    } else {
+        float half_lo = rendering_top ? 0.5f : 0.f;
+        float half_hi = rendering_top ? 1.f  : 0.5f;
+        float lo = vis_min > half_lo ? vis_min : half_lo;
+        float hi = vis_max < half_hi ? vis_max : half_hi;
+        if (lo >= hi) {
+            ShaderSetFloat(sh, "portal_clip_uv_min",  2.f);   // impossible → discard all
+            ShaderSetFloat(sh, "portal_clip_uv_max", -1.f);
+        } else {
+            ShaderSetFloat(sh, "portal_clip_uv_min", (lo - half_lo) * 2.f);
+            ShaderSetFloat(sh, "portal_clip_uv_max", (hi - half_lo) * 2.f);
+        }
+    }
+}
+
+static void ResetPortalClip(GL_ID* sh) {
+    ShaderSetFloat(sh, "portal_clip_enabled", 0.f);
+}
+
+
+// ============================================================
 // EntityRender — renders one entity by querying its components.
 // Determine type by component presence (same priority as v1).
 // rendering_top=true: render upper half of sprite at y+0.5 (standard).
@@ -136,30 +170,70 @@ void EmissionRender(int x, int y, EmissionMap& emission_map, Sprite emission_spr
 // ============================================================
 
 void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Sprite* sprites,
-                  bool rendering_top = true, bool level_transitioning = false, bool force_render = false) {
+                  bool rendering_top = true, bool level_transitioning = false, bool force_render = false,
+                  bool exit_render = false) {
 
     // If Entity is hidden due to the clear color mechanic, skip rendering it.
     if (!force_render && isHidden(entity_id, ca)) return;
-    
+
     RenderTransform* rt = ca->render_transform_arr.Get(entity_id);
     if (!rt) return;
 
-    // Bump z for moving entities crossing y rows (prevents clipping behind lower-y entities)
     GridMover*    gm = ca->grid_mover_arr.Get(entity_id);
     GridPosition* gp = ca->grid_position_arr.Get(entity_id);
+
+    bool do_portal = (gm && gm->teleporting);
+
+    // Portal clip: set directional mask before any draw calls for this entity
+    if (do_portal) {
+        int   axis    = (gm->teleport_direction.x != 0) ? 0 : 1;
+        bool  pos_dir = (gm->teleport_direction.x > 0 || gm->teleport_direction.y > 0);
+        float t  = gm->teleport_t;
+        float ec = t;        // entry clip: 0→1 over full animation
+        float xc = 1.f - t; // exit  clip: 1→0 over full animation
+
+        float vis_min, vis_max;
+        if (axis == 0) {
+            // X-axis: simple UV-based clip
+            if (!exit_render) {
+                vis_min = pos_dir ? 0.f        : ec;
+                vis_max = pos_dir ? (1.f - ec) : 1.f;
+            } else {
+                vis_min = pos_dir ? xc  : 0.f;
+                vis_max = pos_dir ? 1.f : (1.f - xc);
+            }
+        } else {
+            // Sprite is 2 units tall: top 1 unit = character, next 0.5 = sidewall, bottom 0.5 = empty padding.
+            // Empty padding occupies v=[0, 0.25], so the clip range that covers real content is [0.25, 1.0].
+            float clip_v = pos_dir ? (1.0f - t * 0.75f) : (0.25f + t * 0.75f);
+            if (!exit_render) {
+                vis_min = pos_dir ? 0.f    : clip_v;
+                vis_max = pos_dir ? clip_v : 1.f;
+            } else {
+                vis_min = pos_dir ? clip_v : 0.f;
+                vis_max = pos_dir ? 1.f    : clip_v;
+            }
+        }
+        if (vis_max <= vis_min) vis_max = -1.f;
+        SetPortalClipForHalf(shaders, axis, vis_min, vis_max, rendering_top);
+    }
+
+    // Bump z for moving entities crossing y rows (prevents clipping behind lower-y entities)
     bool z_bumped = false;
-    if (gm && gm->moving && gp && gp->prev_position.y != gp->position.y) {
+    if (!exit_render && gm && gm->moving && gp && gp->prev_position.y != gp->position.y) {
         rt->transform.position.z += 1.3f;
         z_bumped = true;
     }
 
-    // Shake offset for merge-conflict visual feedback
+    // Shake offset for merge-conflict visual feedback (entry render only)
     float shake_x = 0.f;
-    for (int s = 0; s < MAX_SHAKE_ENTRIES; ++s) {
-        if (shake_entries[s].entity_id == entity_id && shake_entries[s].timer > 0.f) {
-            float t = shake_entries[s].timer;
-            shake_x = sinf(t * 0.05f) * 0.12f * (t / SHAKE_DURATION);
-            break;
+    if (!exit_render) {
+        for (int s = 0; s < MAX_SHAKE_ENTRIES; ++s) {
+            if (shake_entries[s].entity_id == entity_id && shake_entries[s].timer > 0.f) {
+                float t = shake_entries[s].timer;
+                shake_x = sinf(t * 0.05f) * 0.12f * (t / SHAKE_DURATION);
+                break;
+            }
         }
     }
     if (shake_x != 0.f) rt->transform.position.x += shake_x;
@@ -422,6 +496,22 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
     }
 
 done:
+    if (do_portal) ResetPortalClip(shaders);
     if (shake_x != 0.f) rt->transform.position.x -= shake_x;
     if (z_bumped) rt->transform.position.z -= 1.3f;
+
+    // Exit render: second draw at the exit portal position with complementary clip
+    if (do_portal && !exit_render) {
+        float saved_x = rt->transform.position.x;
+        float saved_y = rt->transform.position.y;
+        float saved_z = rt->transform.position.z;
+        float base_z  = (gp && gp->layer == GridLayer::EntityLayer) ? 1.f : 0.f;
+        rt->transform.position.x = gm->teleport_exit_x;
+        rt->transform.position.y = gm->teleport_exit_y;
+        rt->transform.position.z = base_z - 2.f * (float)gm->teleport_exit.y;
+        EntityRender(entity_id, ca, shaders, sprites, rendering_top, level_transitioning, force_render, true);
+        rt->transform.position.x = saved_x;
+        rt->transform.position.y = saved_y;
+        rt->transform.position.z = saved_z;
+    }
 }

@@ -45,7 +45,7 @@ enum class Direction      : uint8_t { Up, Right, Down, Left, Neutral };
 enum class ColorBlendMode : uint8_t { Blended, Additive, Subtractive };
 enum class GridLayer      : uint8_t { GroundLayer, EntityLayer };
 
-#define MOVE_SPEED 0.2f  // seconds per block
+#define MOVE_SPEED 2.0f  // seconds per block
 
 struct GridPosition {
     Vector2Int position;
@@ -60,8 +60,15 @@ struct GridPlayerControlled {
 };
 
 struct GridMover {
-    float move_timer = 0.0f;
-    bool  moving     = false;
+    float      move_timer         = 0.0f;
+    bool       moving             = false;
+    bool       teleporting        = false;
+    Vector2Int teleport_entry     = {};    // grid pos of entry teleporter tile
+    Vector2Int teleport_exit      = {};    // grid pos of exit teleporter tile (partner position)
+    Vector2Int teleport_direction = {};    // movement direction through portal
+    float      teleport_exit_x   = 0.f;   // visual position of exit half, written by EntityUpdateMover
+    float      teleport_exit_y   = 0.f;
+    float      teleport_t        = 0.f;   // normalised animation time 0→1
 };
 
 struct RenderTransform {
@@ -358,7 +365,10 @@ bool EntityMove(
     GridMover*    gm = ca->grid_mover_arr.Get(entity_id);
     if (!gp || !gm) return false; // entity must be movable
 
-    Vector2Int new_pos = gp->position + direction;
+    Vector2Int new_pos    = gp->position + direction;
+    Vector2Int entry_pos  = new_pos;  // entry teleporter tile (= original step target)
+    Vector2Int exit_pos   = {};
+    bool       did_teleport = false;
 
     // Bounds check
     if (new_pos.x < 0 || new_pos.y < 0 || new_pos.x >= tilemap.width || new_pos.y >= tilemap.height) return false;
@@ -376,7 +386,9 @@ bool EntityMove(
                     if (teleport_dest.x >= 0 && teleport_dest.y >= 0 &&
                         teleport_dest.x < tilemap.width && teleport_dest.y < tilemap.height &&
                         !TestTileCollide(tilemap, teleport_dest)) {
-                        new_pos = teleport_dest;
+                        exit_pos    = partner_gp->position;
+                        did_teleport = true;
+                        new_pos     = teleport_dest;
                     }
                 }
             }
@@ -404,6 +416,16 @@ bool EntityMove(
     gm->moving     = true;
     gm->move_timer = 0.0f;
 
+    gm->teleporting = did_teleport;
+    if (did_teleport) {
+        gm->teleport_entry     = entry_pos;
+        gm->teleport_exit      = exit_pos;
+        gm->teleport_direction = direction;
+        gm->teleport_exit_x    = (float)exit_pos.x;
+        gm->teleport_exit_y    = (float)exit_pos.y;
+        gm->teleport_t         = 0.f;
+    }
+
     return true;
 }
 
@@ -421,14 +443,27 @@ void EntityUpdateMover(int entity_id, ComponentArrays* ca, float dt) {
     gm->move_timer += dt;
     float t = gm->move_timer / (MOVE_SPEED * 1000.0f);
 
-    rt->transform.position.x = Lerp((float)gp->prev_position.x, (float)gp->position.x, t);
-    rt->transform.position.y = Lerp((float)gp->prev_position.y, (float)gp->position.y, t);
+    if (gm->teleporting) {
+        // Both sides use full t so each travels at normal movement speed.
+        // The directional clip in EntityRender handles visibility (entry fades out, exit fades in).
+        rt->transform.position.x = Lerp((float)gp->prev_position.x, (float)gm->teleport_entry.x, t);
+        rt->transform.position.y = Lerp((float)gp->prev_position.y, (float)gm->teleport_entry.y, t);
+
+        gm->teleport_exit_x = Lerp((float)gm->teleport_exit.x, (float)gp->position.x, t);
+        gm->teleport_exit_y = Lerp((float)gm->teleport_exit.y, (float)gp->position.y, t);
+
+        gm->teleport_t = t;
+    } else {
+        rt->transform.position.x = Lerp((float)gp->prev_position.x, (float)gp->position.x, t);
+        rt->transform.position.y = Lerp((float)gp->prev_position.y, (float)gp->position.y, t);
+    }
 
     if (t >= 1.0f) {
         rt->transform.position.x = (float)gp->position.x;
         rt->transform.position.y = (float)gp->position.y;
         gm->move_timer    = 0.0f;
         gm->moving        = false;
+        gm->teleporting   = false;
         gp->prev_position = gp->position;
     }
 }
