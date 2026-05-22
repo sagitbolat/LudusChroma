@@ -418,4 +418,9 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
         EntityUpdateButton(i, &comp_arrays, entity_map, (float)dt);
     }
     for (int i = 0; i < level_info.num_entities; ++i) EntityUpdateDoor(i, &comp_arrays, entity_map, level_info.num_entities, (float)dt);
+    
+    global_anim_timer += (float)dt;
+    if (global_anim_timer >= 600.f) global_anim_timer -= 600.f;
+    teleporter_anim_frame = (int)(global_anim_timer / 200.f);
+    if (teleporter_anim_frame > 2) teleporter_anim_frame = 2;
 }

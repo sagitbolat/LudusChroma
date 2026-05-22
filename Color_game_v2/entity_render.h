@@ -59,6 +59,23 @@ static inline void UVBottomHalf(GL_ID* sh) {
     ShaderSetVector(sh, "uv_offset",    Vector2{ 0.f, 0.f  });
 }
 
+static inline void UVTopHalfAnim(GL_ID* sh, int frame, int num_frames) {
+    float uv_w = 1.f / (float)num_frames;
+    int   col  = frame % num_frames;
+    ShaderSetVector(shaders, "bot_left_uv",  Vector2{ 0.f,        0.f });
+    ShaderSetVector(shaders, "top_right_uv", Vector2{ uv_w,       0.5f });
+    ShaderSetVector(shaders, "uv_offset",    Vector2{ col * uv_w, 0.5f });
+}
+
+static inline void UVBottomHalfAnim(GL_ID* sh, int frame, int num_frames) {
+    float uv_w = 1.f / (float)num_frames;
+    int   col  = frame % num_frames;
+    ShaderSetVector(shaders, "bot_left_uv",  Vector2{ 0.f,        0.f });
+    ShaderSetVector(shaders, "top_right_uv", Vector2{ uv_w,       0.5f });
+    ShaderSetVector(shaders, "uv_offset",    Vector2{ col * uv_w, 0.f });
+
+}
+
 static inline void ColorMul(GL_ID* sh, Color c, bool active) {
     if (active) ShaderSetVector(sh, "i_color_multiplier", Vec4(c));
 }
@@ -183,6 +200,11 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
     GridPosition* gp = ca->grid_position_arr.Get(entity_id);
 
     bool do_portal = (gm && gm->teleporting);
+
+    if (do_portal && !exit_render && gm->teleport_direction.y != 0) {
+        float base_z = (gp && gp->layer == GridLayer::EntityLayer) ? 1.f : 0.f;
+        rt->transform.position.z = base_z - 2.f * (float)gm->teleport_entry.y;
+    }
 
     // Portal clip: set directional mask before any draw calls for this entity
     if (do_portal) {
@@ -390,9 +412,19 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
         if (tp) {
             Transform t{};
             CopyTransform(&t, rt->transform);
-            t.scale.y = 2.f;
+
             ColorMul(shaders, tp->color, !level_transitioning);
-            DrawSprite(sprites[SPR_TELEPORTER], t, main_camera);
+            // RENDER TOP HALF
+            t.position.y +=0.5f;
+            t.position.z += 1.5f;
+            UVTopHalfAnim(shaders, teleporter_anim_frame, 3);
+            DrawSprite(teleporter_anim_sheet.sprite, t, main_camera);
+
+            // RENDER BOTTOM HALF
+            t.position.y -= 1.0f;
+            t.position.z -= 1.25f;
+            UVBottomHalfAnim(shaders, teleporter_anim_frame, 3);
+            DrawSprite(teleporter_anim_sheet.sprite, t, main_camera);
             ColorMulReset(shaders, !level_transitioning);
             goto done;
         }

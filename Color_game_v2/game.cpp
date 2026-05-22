@@ -30,6 +30,11 @@ SpriteSheet   door_open_sheet        = {};
 SpriteSheet   door_close_sheet       = {};
 SpriteSheet   button_down_sheet      = {};
 SpriteSheet   button_up_sheet        = {};
+SpriteSheet   teleporter_anim_sheet  = {};
+
+// TELEPORTER ANIMATION STUFF
+float global_anim_timer = 0.f;
+int   teleporter_anim_frame = 0;
 
 #include "tilemap.h"
 #include "entity.h"
@@ -287,10 +292,11 @@ void Awake(GameMemory* gm) {
     };
     for (int i = 0; i < 30; ++i) sprites[i] = tmp[i];
 
-    door_open_sheet   = MakeSpriteSheet(LoadSprite("assets/door_open_anim.png",   shaders, gpu_buffers), 9, 1, 9);
-    door_close_sheet  = MakeSpriteSheet(LoadSprite("assets/door_close_anim.png",  shaders, gpu_buffers), 9, 1, 9);
-    button_down_sheet = MakeSpriteSheet(LoadSprite("assets/button_down_anim.png", shaders, gpu_buffers), 3, 1, 3);
-    button_up_sheet   = MakeSpriteSheet(LoadSprite("assets/button_up_anim.png",   shaders, gpu_buffers), 3, 1, 3);
+    door_open_sheet       = MakeSpriteSheet(LoadSprite("assets/door_open_anim.png",   shaders, gpu_buffers), 9, 1, 9);
+    door_close_sheet      = MakeSpriteSheet(LoadSprite("assets/door_close_anim.png",  shaders, gpu_buffers), 9, 1, 9);
+    button_down_sheet     = MakeSpriteSheet(LoadSprite("assets/button_down_anim.png", shaders, gpu_buffers), 3, 1, 3);
+    button_up_sheet       = MakeSpriteSheet(LoadSprite("assets/button_up_anim.png",   shaders, gpu_buffers), 3, 1, 3);
+    teleporter_anim_sheet = MakeSpriteSheet(LoadSprite("assets/teleporter_anim.png",  shaders, gpu_buffers), 3, 1, 3);
 
     comp_arrays.Init(MAX_ENTITIES);
 
