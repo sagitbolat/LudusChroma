@@ -282,7 +282,7 @@ void EditorUpdate(KeyboardState* ks, double dt) {
     // ---- Enter/Backspace: cycle levels in editor ----
     if (ks->state.ENTER && !ks->prev_state.ENTER) {
         if (++ed_level_idx >= NUM_LEVELS) ed_level_idx = 0;
-        strncpy(ed_name, level_names[ed_level_idx], 255);
+        strncpy(ed_name, levels[ed_level_idx].name, 255);
         EditorLoadLevel(ed_name);
         curr_level_index = ed_level_idx + 1;
     }

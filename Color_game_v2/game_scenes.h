@@ -99,7 +99,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
         t += (float)dt;
         if (t < DUR) {
             float frac = t / DUR;
-            main_camera.width  = (level_zoom[curr_level_index-1] + ZOOM_EXTRA) - frac * ZOOM_EXTRA;
+            main_camera.width  = (levels[curr_level_index-1].zoom + ZOOM_EXTRA) - frac * ZOOM_EXTRA;
             main_camera.height = (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH * main_camera.width;
             ShaderSetVector(shaders, "i_color_multiplier", Vec4(fColor{ 1.f, 1.f, 1.f, frac }));
         } else {
@@ -123,7 +123,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
         if (editor_mode) {
             int idx = curr_level_index - 1;
             if (idx >= 0 && idx < NUM_LEVELS) {
-                strncpy(ed_name, level_names[idx], 255);
+                strncpy(ed_name, levels[idx].name, 255);
                 ed_name[255] = '\0';
                 ed_level_idx = idx;
             }
@@ -153,7 +153,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
         if (fading_in) {
             if (trans_t < DUR) {
                 int  zoom_idx  = restarting_level ? curr_level_index : curr_level_index - 1;
-                main_camera.width  = level_zoom[zoom_idx] + (trans_t / DUR) * ZOOM_EXTRA;
+                main_camera.width  = levels[zoom_idx].zoom + (trans_t / DUR) * ZOOM_EXTRA;
                 main_camera.height = (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH * main_camera.width;
                 float alpha = 1.f - (trans_t / (DUR / 2.f));
                 ShaderSetVector(shaders, "i_color_multiplier",
@@ -164,7 +164,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
                 restarting_level = false;
                 showing_wires    = false;
                 ShaderSetVector(shaders, "i_color_multiplier", Vector4{ 1.f, 1.f, 1.f, 1.f });
-                main_camera.width  = level_zoom[curr_level_index - 1];
+                main_camera.width  = levels[curr_level_index - 1].zoom;
                 main_camera.height = (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH * main_camera.width;
                 CenterCamera();
                 trans_t   = 0.f;
@@ -174,7 +174,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
         } else {
             if (trans_t < DUR) {
                 float frac = trans_t / DUR;
-                main_camera.width  = (level_zoom[curr_level_index-1] + ZOOM_EXTRA) - frac * ZOOM_EXTRA;
+                main_camera.width  = (levels[curr_level_index-1].zoom + ZOOM_EXTRA) - frac * ZOOM_EXTRA;
                 main_camera.height = (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH * main_camera.width;
                 ShaderSetVector(shaders, "i_color_multiplier", Vec4(fColor{ 1.f, 1.f, 1.f, frac }));
             } else {

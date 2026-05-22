@@ -59,15 +59,41 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
 // SECTION: Level list
 // ============================================================
 
-const int NUM_LEVELS = 15;
+const int NUM_LEVELS = 24;
 int curr_level_index = 0;
 
-char level_names[][64] = {
-    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"
+
+struct LevelParams {
+    char name[16];
+    float zoom;
 };
 
-float level_zoom[] = {
-    14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 14.f, 20.f, 14.f, 14.f, 20.f
+
+LevelParams levels[] = {
+    {"0",  14.f},
+    {"1",  14.f},
+    {"2",  14.f},
+    {"3",  14.f},
+    {"4",  14.f},
+    {"5",  14.f},
+    {"6",  14.f},
+    {"7",  14.f},
+    {"8",  14.f},
+    {"9",  14.f},
+    {"10", 14.f},
+    {"11", 20.f},
+    {"12", 14.f},
+    {"13", 14.f},
+    {"14", 20.f},
+    {"15", 14.f},
+    {"16", 14.f},
+    {"17", 14.f},
+    {"18", 14.f},
+    {"19", 14.f},
+    {"20", 14.f},
+    {"21", 14.f},
+    {"22", 14.f},
+    {"23", 14.f},
 };
 
 
@@ -196,12 +222,12 @@ static void CenterCamera() {
 }
 
 static void LoadLevel(int index) {
-    level_info = ReadLevelState(level_names[index], &tilemap, &comp_arrays, &entity_map,
+    level_info = ReadLevelState(levels[index].name, &tilemap, &comp_arrays, &entity_map,
                                 player_ids, &num_players);
     ResetEmissionMap();
     CenterCamera();
     UndoReallocate();
-    main_camera.width  = level_zoom[index];
+    main_camera.width  = levels[index].zoom;
     main_camera.height = (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH * main_camera.width;
 }
 
