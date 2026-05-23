@@ -76,6 +76,15 @@ static inline void UVBottomHalfAnim(GL_ID* sh, int frame, int num_frames) {
 
 }
 
+static inline void UVAnim(GL_ID* sh, int frame, int num_frames) {
+    float uv_w = 1.f / (float)num_frames;
+    int   col  = frame % num_frames;
+    ShaderSetVector(shaders, "bot_left_uv",  Vector2{ 0.f,        0.f });
+    ShaderSetVector(shaders, "top_right_uv", Vector2{ uv_w,       1.f });
+    ShaderSetVector(shaders, "uv_offset",    Vector2{ col * uv_w, 0.f });
+
+}
+
 static inline void ColorMul(GL_ID* sh, Color c, bool active) {
     if (active) ShaderSetVector(sh, "i_color_multiplier", Vec4(c));
 }
@@ -426,6 +435,7 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
             UVBottomHalfAnim(shaders, teleporter_anim_frame, 3);
             DrawSprite(teleporter_anim_sheet.sprite, t, main_camera);
             ColorMulReset(shaders, !level_transitioning);
+            UVReset(shaders);
             goto done;
         }
     }
@@ -503,6 +513,10 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
     // ---- Endgoal ----
     if (ca->endgoal_arr.Get(entity_id)) {
         DrawSprite(sprites[SPR_ENDGOAL], rt->transform, main_camera);
+        rt->transform.position.z += 0.05f;
+        UVAnim(shaders, endgoal_overlay_anim_frame, endgoal_overlay_anim_sheet.frame_count);
+        DrawSprite(endgoal_overlay_anim_sheet.sprite, rt->transform, main_camera);
+        UVReset(shaders);
         goto done;
     }
 

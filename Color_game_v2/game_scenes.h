@@ -141,6 +141,14 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
         return;
     }
 
+    // ---- Screenshot export (F5 cycles through all levels) ----
+    if (ks->state.F5 && !ks->prev_state.F5) {
+        exporting_screenshots = true;
+        export_idx            = 0;
+        level_transitioning   = false;
+        LoadLevel(export_idx);
+    }
+
     // ---- Level transition animation ----
     if (level_transitioning) {
         static float trans_t   = 0.f;
@@ -420,7 +428,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
     for (int i = 0; i < level_info.num_entities; ++i) EntityUpdateDoor(i, &comp_arrays, entity_map, level_info.num_entities, (float)dt);
     
     global_anim_timer += (float)dt;
-    if (global_anim_timer >= 600.f) global_anim_timer -= 600.f;
-    teleporter_anim_frame = (int)(global_anim_timer / 200.f);
-    if (teleporter_anim_frame > 2) teleporter_anim_frame = 2;
+    int global_anim_frame = (int)(global_anim_timer / GLOBAL_FRAME_DURATION);
+    teleporter_anim_frame = global_anim_frame % 3;
+    endgoal_overlay_anim_frame = global_anim_frame % 7;
 }

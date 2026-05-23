@@ -31,10 +31,17 @@ SpriteSheet   door_close_sheet       = {};
 SpriteSheet   button_down_sheet      = {};
 SpriteSheet   button_up_sheet        = {};
 SpriteSheet   teleporter_anim_sheet  = {};
+SpriteSheet   endgoal_overlay_anim_sheet = {};
 
 // TELEPORTER ANIMATION STUFF
+const float GLOBAL_FRAME_DURATION = 180.f;
 float global_anim_timer = 0.f;
 int   teleporter_anim_frame = 0;
+int   endgoal_overlay_anim_frame = 0;
+
+// SCREENSHOT EXPORT
+bool exporting_screenshots = false;
+int  export_idx            = 0;
 
 #include "tilemap.h"
 #include "entity.h"
@@ -59,7 +66,7 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
 // SECTION: Level list
 // ============================================================
 
-const int NUM_LEVELS = 24;
+const int NUM_LEVELS = 25;
 int curr_level_index = 0;
 
 
@@ -86,14 +93,15 @@ LevelParams levels[] = {
     {"13", 14.f},
     {"14", 20.f},
     {"15", 14.f},
-    {"16", 14.f},
+    {"16", 17.f},
     {"17", 14.f},
     {"18", 14.f},
-    {"19", 14.f},
+    {"19", 17.f},
     {"20", 14.f},
-    {"21", 14.f},
-    {"22", 14.f},
+    {"21", 17.f},
+    {"22", 20.f},
     {"23", 14.f},
+    {"24", 20.f}
 };
 
 
@@ -323,6 +331,7 @@ void Awake(GameMemory* gm) {
     button_down_sheet     = MakeSpriteSheet(LoadSprite("assets/button_down_anim.png", shaders, gpu_buffers), 3, 1, 3);
     button_up_sheet       = MakeSpriteSheet(LoadSprite("assets/button_up_anim.png",   shaders, gpu_buffers), 3, 1, 3);
     teleporter_anim_sheet = MakeSpriteSheet(LoadSprite("assets/teleporter_anim.png",  shaders, gpu_buffers), 3, 1, 3);
+    endgoal_overlay_anim_sheet = MakeSpriteSheet(LoadSprite("assets/endgoal_overlay_anim.png", shaders, gpu_buffers), 7, 1, 7);
 
     comp_arrays.Init(MAX_ENTITIES);
 

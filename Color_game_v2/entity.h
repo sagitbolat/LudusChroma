@@ -404,6 +404,7 @@ bool EntityMove(
     // Check entity layer for a blocking entity; try to push it
     int blocking_id = entity_map.GetID(new_pos.x, new_pos.y, (int)gp->layer);
     if (blocking_id >= 0) {
+        if (ca->grid_player_controlled_arr.Get(blocking_id)) return false;
         bool pushed = EntityMove(blocking_id, direction, tilemap, entity_map, ca, move_weight - 1);
         if (!pushed) return false;
     }

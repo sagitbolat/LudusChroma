@@ -1,6 +1,7 @@
 // ============================================================
 // SECTION: Render helpers
 // ============================================================
+#include <GL/glew.h>
 
 static void SetEntityZ(int id, float base_z, int y) {
     RenderTransform* rt = comp_arrays.render_transform_arr.Get(id);
@@ -72,7 +73,7 @@ static bool SetEntityIrisMask(int id) {
 
 static void GameRender() {
     // ---- Tutorial hints ----
-    if (!level_transitioning) {
+    if (!level_transitioning && !exporting_screenshots) {
         int lvl = curr_level_index - 1;
         Transform t{};
         t.position.x = float(tilemap.width / 2);
@@ -223,5 +224,32 @@ static void GameRender() {
             EntityRender(i, &comp_arrays, shaders, sprites, true, level_transitioning, true);
             ShaderSetFloat(shaders, "iris_mask_enabled", 0.f);
         }
+    }
+
+    // ---- Screenshot export ----
+    if (exporting_screenshots) {
+        _mkdir("levels");
+        _mkdir("levels/screenshots");
+        int w = SCREEN_WIDTH, h = SCREEN_HEIGHT;
+        unsigned char* pixels = (unsigned char*)malloc(w * h * 3);
+        glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+        SDL_Surface* surf = SDL_CreateRGBSurfaceWithFormat(0, w, h, 24, SDL_PIXELFORMAT_RGB24);
+        if (surf) {
+            SDL_LockSurface(surf);
+            unsigned char* dst = (unsigned char*)surf->pixels;
+            for (int row = 0; row < h; row++)
+                memcpy(dst + row * surf->pitch, pixels + (h - 1 - row) * w * 3, w * 3);
+            SDL_UnlockSurface(surf);
+            char path[256];
+            sprintf(path, "levels/screenshots/%d.bmp", export_idx);
+            SDL_SaveBMP(surf, path);
+            SDL_FreeSurface(surf);
+        }
+        free(pixels);
+        export_idx++;
+        if (export_idx < NUM_LEVELS)
+            LoadLevel(export_idx);
+        else
+            exporting_screenshots = false;
     }
 }
