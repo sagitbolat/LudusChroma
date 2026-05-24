@@ -132,8 +132,10 @@ static void WriteEntityRecord(int entity_id, ComponentArrays* ca, FILE* f) {
         WriteU32((uint32_t)cc->mode, f);
         WriteU32(movable ? 1u : 0u, f);
     } else if (ca->endgoal_arr.Get(entity_id)) {
+        ColorTag* ct = ca->color_tag_arr.Get(entity_id);
         WriteU32((uint32_t)EntityTypeV2::Endgoal, f);
         WriteU32((uint32_t)pos.x, f); WriteU32((uint32_t)pos.y, f);
+        WriteColor(ct ? ct->color : Color{230,230,230,255}, f);
     } else if (ca->grid_mover_arr.Get(entity_id)) {
         ColorTag* ct = ca->color_tag_arr.Get(entity_id);
         WriteU32((uint32_t)EntityTypeV2::PushBlock, f);
@@ -242,7 +244,8 @@ static void ReadEntityRecord(
             break;
         }
         case EntityTypeV2::Endgoal: {
-            EndgoalInit(id, ca, { x, y });
+            Color color = ReadColor(f);
+            EndgoalInit(id, ca, { x, y }, color);
             entity_map->SetID(x, y, (int)GridLayer::GroundLayer, id);
             break;
         }

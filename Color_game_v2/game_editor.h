@@ -152,7 +152,7 @@ void EditorUpdate(KeyboardState* ks, double dt) {
                 case 3:  EmitterInit(id, &comp_arrays, {mx,my}, {255,255,255,255}, Direction::Down); entity_map.SetID(mx,my,1,id); break;
                 case 4:  ReceiverInit(id, &comp_arrays, {mx,my}, {255,255,255,255}, self_ch); entity_map.SetID(mx,my,1,id); break;
                 case 5:  DoorInit(id, &comp_arrays, {mx,my}, false, empty_ch); entity_map.SetID(mx,my,0,id); break;
-                case 6:  EndgoalInit(id, &comp_arrays, {mx,my}); entity_map.SetID(mx,my,0,id); break;
+                case 6:  EndgoalInit(id, &comp_arrays, {mx,my}, DEFAULT_WHITE); entity_map.SetID(mx,my,0,id); break;
                 case 7:  ButtonInit(id, &comp_arrays, {mx,my}, self_ch); entity_map.SetID(mx,my,0,id); break;
                 case 8:  TeleporterInit(id, &comp_arrays, {mx,my}, {255,250,230,255}, -1); entity_map.SetID(mx,my,0,id); break;
                 case 9:  ColorChangerInit(id, &comp_arrays, {mx,my}, {255,255,255,255}, ColorBlendMode::Additive, true); entity_map.SetID(mx,my,1,id); break;
@@ -226,6 +226,9 @@ void EditorUpdate(KeyboardState* ks, double dt) {
         }
         if (id0 >= 0) {
             if (auto* tp = comp_arrays.teleporter_arr.Get(id0)) tp->color = c;
+            if (comp_arrays.endgoal_arr.Get(id0)) {
+                if (auto* ct = comp_arrays.color_tag_arr.Get(id0)) ct->color = c;
+            }
         }
     }
 

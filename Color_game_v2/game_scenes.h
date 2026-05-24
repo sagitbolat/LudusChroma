@@ -361,17 +361,31 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             }
         }
 
-        for (int p = 0; p < num_players; ++p) {
-            GridPosition* gp = comp_arrays.grid_position_arr.Get(player_ids[p]);
-            GridMover*    gm = comp_arrays.grid_mover_arr.Get(player_ids[p]);
-            if (gp && gm && !gm->moving) {
-                int floor_id = entity_map.GetID(gp->position.x, gp->position.y, (int)GridLayer::GroundLayer);
-                if (floor_id >= 0 && comp_arrays.endgoal_arr.Get(floor_id)) {
-                    showing_wires       = false;
-                    level_transitioning = true;
-                    if (curr_level_index >= NUM_LEVELS) curr_level_index = 0;
-                    break;
+        {
+            int num_endgoals = (int)comp_arrays.endgoal_arr.dense.size();
+            int covered      = 0;
+            for (int e = 0; e < num_endgoals; ++e) {
+                int eg_id        = comp_arrays.endgoal_arr.dense_ids[e];
+                GridPosition* eg_gp = comp_arrays.grid_position_arr.Get(eg_id);
+                if (!eg_gp) continue;
+                ColorTag* eg_ct = comp_arrays.color_tag_arr.Get(eg_id);
+                for (int p = 0; p < num_players; ++p) {
+                    GridPosition* gp = comp_arrays.grid_position_arr.Get(player_ids[p]);
+                    GridMover*    gm = comp_arrays.grid_mover_arr.Get(player_ids[p]);
+                    if (gp && gm && !gm->moving &&
+                        gp->position.x == eg_gp->position.x &&
+                        gp->position.y == eg_gp->position.y) {
+                        ColorTag* p_ct = comp_arrays.color_tag_arr.Get(player_ids[p]);
+                        if (!eg_ct || !p_ct || !(p_ct->color == eg_ct->color)) continue;
+                        ++covered;
+                        break;
+                    }
                 }
+            }
+            if (num_endgoals > 0 && covered == num_endgoals) {
+                showing_wires       = false;
+                level_transitioning = true;
+                if (curr_level_index >= NUM_LEVELS) curr_level_index = 0;
             }
         }
 

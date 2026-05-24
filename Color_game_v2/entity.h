@@ -277,11 +277,12 @@ void DoorInit(int id, ComponentArrays* ca, Vector2Int pos, bool open_by_default,
     ca->signal_channel_arr.Insert(id, MakeSignalChannel(channels));
 }
 
-void EndgoalInit(int id, ComponentArrays* ca, Vector2Int pos) {
+void EndgoalInit(int id, ComponentArrays* ca, Vector2Int pos, Color color) {
     ca->grid_position_arr.Insert(id, GridPosition{ pos, pos, GridLayer::GroundLayer });
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::GroundLayer));
     ca->endgoal_arr.Insert(id, Endgoal{});
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::PassThrough });
+    ca->color_tag_arr.Insert(id, ColorTag{ color });
 }
 
 void ButtonInit(int id, ComponentArrays* ca, Vector2Int pos, int32_t channels[MAX_CONNECTIONS]) {

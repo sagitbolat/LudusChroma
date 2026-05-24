@@ -512,10 +512,13 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
 
     // ---- Endgoal ----
     if (ca->endgoal_arr.Get(entity_id)) {
+        ColorTag* ct = ca->color_tag_arr.Get(entity_id);
         DrawSprite(sprites[SPR_ENDGOAL], rt->transform, main_camera);
         rt->transform.position.z += 0.05f;
         UVAnim(shaders, endgoal_overlay_anim_frame, endgoal_overlay_anim_sheet.frame_count);
+        if (ct) ColorMul(shaders, ct->color, !level_transitioning);
         DrawSprite(endgoal_overlay_anim_sheet.sprite, rt->transform, main_camera);
+        if (ct) ColorMulReset(shaders, !level_transitioning);
         UVReset(shaders);
         goto done;
     }
