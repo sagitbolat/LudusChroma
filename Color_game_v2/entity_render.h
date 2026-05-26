@@ -451,20 +451,14 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
             CopyTransform(&t, rt->transform);
             t.position.y += rendering_top ? 0.5f : -0.5f;
 
+
             ColorMul(shaders, cc->main_color, !level_transitioning);
             if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
-            const Sprite& cc_sprite = (cc->mode == ColorBlendMode::Subtractive) ? color_changer_subtractive_sprite
-                              : (cc->mode == ColorBlendMode::Additive)    ? color_changer_additive_sprite
-                              :                                              sprites[SPR_COLOR_CHANGER];
-            DrawSprite(cc_sprite, t, main_camera);
-            ColorMulReset(shaders, !level_transitioning);
-            UVReset(shaders);
-
+            DrawSprite(sprites[SPR_COLOR_CHANGER], t, main_camera);
             t.position.z += 0.1f;
-            if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
             DrawSprite(sprites[SPR_CC_FRAME], t, main_camera);
             UVReset(shaders);
-
+            ColorMulReset(shaders, !level_transitioning);
             // Laser visualization (only on top pass; uses frame-transient input colors)
             if (rendering_top) {
                 ShaderSetVector(shaders, "bot_left_uv",  Vector2{ 0.f,       0.f });
@@ -511,6 +505,20 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
 
                 UVReset(shaders);
                 ColorMulReset(shaders, !level_transitioning);
+
+                t.scale.y = rt->transform.scale.y;
+                t.position.y += 0.5f;
+                t.position.z += 0.1f;
+
+                ColorMul(shaders, cc->main_color, !level_transitioning);
+                if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
+                const Sprite& cc_sprite = (cc->mode == ColorBlendMode::Subtractive) ? color_changer_subtractive_sprite
+                                : (cc->mode == ColorBlendMode::Additive)    ? color_changer_additive_sprite
+                                :                                              sprites[SPR_COLOR_CHANGER];
+                DrawSprite(cc_sprite, t, main_camera);
+                ColorMulReset(shaders, !level_transitioning);
+                UVReset(shaders);
+
             }
             goto done;
         }
