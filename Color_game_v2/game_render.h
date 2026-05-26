@@ -67,6 +67,42 @@ static bool SetEntityIrisMask(int id) {
 }
 
 
+static void DrawTextOnSurface(SDL_Surface* surf, const char* text, int px, int py,
+                               int scale, uint8_t r, uint8_t g, uint8_t b) {
+    static const uint8_t FONT[10][7] = {
+        { 0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E },  // 0
+        { 0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E },  // 1
+        { 0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F },  // 2
+        { 0x1F, 0x02, 0x04, 0x02, 0x01, 0x11, 0x0E },  // 3
+        { 0x02, 0x06, 0x0A, 0x12, 0x1F, 0x02, 0x02 },  // 4
+        { 0x1F, 0x10, 0x1E, 0x01, 0x01, 0x11, 0x0E },  // 5
+        { 0x06, 0x08, 0x10, 0x1E, 0x11, 0x11, 0x0E },  // 6
+        { 0x1F, 0x01, 0x02, 0x04, 0x08, 0x08, 0x08 },  // 7
+        { 0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E },  // 8
+        { 0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C },  // 9
+    };
+    int bpp = surf->format->BytesPerPixel;
+    for (int ci = 0; text[ci]; ++ci) {
+        char c = text[ci];
+        if (c < '0' || c > '9') { px += (5 + 1) * scale; continue; }
+        const uint8_t* glyph = FONT[c - '0'];
+        for (int row = 0; row < 7; ++row)
+            for (int col = 0; col < 5; ++col) {
+                if (!(glyph[row] & (1 << (4 - col)))) continue;
+                for (int sy = 0; sy < scale; ++sy)
+                    for (int sx = 0; sx < scale; ++sx) {
+                        int fx = px + col * scale + sx;
+                        int fy = py + row * scale + sy;
+                        if (fx < 0 || fy < 0 || fx >= surf->w || fy >= surf->h) continue;
+                        uint8_t* p = (uint8_t*)surf->pixels + fy * surf->pitch + fx * bpp;
+                        p[0] = r; p[1] = g; p[2] = b;
+                    }
+            }
+        px += (5 + 1) * scale;
+    }
+}
+
+
 // ============================================================
 // SECTION: Game render
 // ============================================================
@@ -239,6 +275,8 @@ static void GameRender() {
             unsigned char* dst = (unsigned char*)surf->pixels;
             for (int row = 0; row < h; row++)
                 memcpy(dst + row * surf->pitch, pixels + (h - 1 - row) * w * 3, w * 3);
+            DrawTextOnSurface(surf, levels[export_idx].name, 17, 17, 16, 0,   0,   0  );
+            DrawTextOnSurface(surf, levels[export_idx].name, 16, 16, 16, 255, 255, 255);
             SDL_UnlockSurface(surf);
             char path[256];
             sprintf(path, "levels/screenshots/%d.bmp", export_idx);

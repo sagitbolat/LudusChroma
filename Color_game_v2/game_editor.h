@@ -189,10 +189,10 @@ void EditorUpdate(KeyboardState* ks, double dt) {
             
             ColorChanger* cc = comp_arrays.color_changer_arr.Get(id);
             if (cc) {
-                //if (cc->mode == ColorBlendMode::Additive) cc->mode = ColorBlendMode::Subtractive;
-                //else if (cc->mode == ColorBlendMode::Subtractive) cc->mode = ColorBlendMode::Blended;
+                if (cc->mode == ColorBlendMode::Additive) cc->mode = ColorBlendMode::Subtractive;
+                else if (cc->mode == ColorBlendMode::Subtractive) cc->mode = ColorBlendMode::Additive;
                 //else if (cc->mode == ColorBlendMode::Blended) cc->mode = ColorBlendMode::Additive;
-                cc->mode = ColorBlendMode::Additive;
+                //cc->mode = ColorBlendMode::Additive;
             }
             
         } else {

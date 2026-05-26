@@ -340,9 +340,9 @@ static inline Color AddColor(Color a, Color b) {
 
 static inline Color SubtractColor(Color a, Color b) {
     return Color{
-        (uint8_t)IntClamp(a.r - b.r, 92, 230),
-        (uint8_t)IntClamp(a.g - b.g, 92, 230),
-        (uint8_t)IntClamp(a.b - b.b, 92, 230),
+        (uint8_t)IntClamp(a.r - (b.r - 92), 92, 230),
+        (uint8_t)IntClamp(a.g - (b.g - 92), 92, 230),
+        (uint8_t)IntClamp(a.b - (b.b - 92), 92, 230),
         uint8_t(255) 
     };
 }

@@ -4,6 +4,9 @@
 #include "entity.h"
 #include "game_color_switcher.h"
 
+extern Sprite color_changer_additive_sprite;
+extern Sprite color_changer_subtractive_sprite;
+
 // Sprite index constants — must match the sprite array loaded in game.cpp
 #define SPR_PLAYER_NEUTRAL  0
 #define SPR_PLAYER_UP       1
@@ -450,7 +453,10 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
 
             ColorMul(shaders, cc->main_color, !level_transitioning);
             if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
-            DrawSprite(sprites[SPR_COLOR_CHANGER], t, main_camera);
+            const Sprite& cc_sprite = (cc->mode == ColorBlendMode::Subtractive) ? color_changer_subtractive_sprite
+                              : (cc->mode == ColorBlendMode::Additive)    ? color_changer_additive_sprite
+                              :                                              sprites[SPR_COLOR_CHANGER];
+            DrawSprite(cc_sprite, t, main_camera);
             ColorMulReset(shaders, !level_transitioning);
             UVReset(shaders);
 

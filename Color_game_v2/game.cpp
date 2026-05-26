@@ -66,7 +66,7 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
 // SECTION: Level list
 // ============================================================
 
-const int NUM_LEVELS = 31;
+const int NUM_LEVELS = 34;
 int curr_level_index = 0;
 
 
@@ -107,7 +107,10 @@ LevelParams levels[] = {
     {"27", 14.f},
     {"28", 14.f},
     {"29", 14.f},
-    {"30", 14.f}
+    {"30", 14.f},
+    {"31", 20.f},
+    {"32", 14.f},
+    {"33", 30.f}
 };
 
 
@@ -131,6 +134,8 @@ Sprite sprites[30];
 Sprite emission_sprite;
 Sprite wire_sprite;
 Sprite tileset_sprite_asset;
+Sprite color_changer_additive_sprite;
+Sprite color_changer_subtractive_sprite;
 
 Sprite WASD_sprite;
 Sprite reload_sprite;
@@ -294,9 +299,11 @@ void Awake(GameMemory* gm) {
     act1_1_text       = LoadSprite("assets/act1_1.png",           shaders, gpu_buffers);
     act2_text         = LoadSprite("assets/act1.png",             shaders, gpu_buffers);
 
-    emission_sprite   = LoadSprite("assets/emission.png",         shaders,      gpu_buffers);
-    iris_sprite       = LoadSprite("assets/emission.png",         iris_shaders, gpu_buffers);
-    wire_sprite       = LoadSprite("assets/wire.png",             shaders, gpu_buffers);
+    emission_sprite                = LoadSprite("assets/emission.png",                  shaders,      gpu_buffers);
+    iris_sprite                    = LoadSprite("assets/emission.png",                  iris_shaders, gpu_buffers);
+    wire_sprite                    = LoadSprite("assets/wire.png",                      shaders, gpu_buffers);
+    color_changer_additive_sprite  = LoadSprite("assets/color_changer_additive.png",    shaders, gpu_buffers);
+    color_changer_subtractive_sprite = LoadSprite("assets/color_changer_subtractive.png", shaders, gpu_buffers);
 
     Sprite tmp[30] = {
         LoadSprite("assets/player.png",               shaders, gpu_buffers), // 0
