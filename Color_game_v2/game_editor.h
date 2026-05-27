@@ -25,6 +25,7 @@ static void EditorDeleteEntity(int id) {
     comp_arrays.teleporter_arr.Delete(id);
     comp_arrays.color_changer_arr.Delete(id);
     comp_arrays.color_tag_arr.Delete(id);
+    comp_arrays.push_move_constraint_arr.Delete(id);
 }
 
 static void EditorNewLevel(int w, int h) {
@@ -186,7 +187,10 @@ void EditorUpdate(KeyboardState* ks, double dt) {
 
             GridPlayerControlled* pc = comp_arrays.grid_player_controlled_arr.Get(id);
             if (pc) pc->upwards_direction = (Direction)(((int)pc->upwards_direction + 1) % 4);
-            
+
+            PushMoveConstraint* pmc = comp_arrays.push_move_constraint_arr.Get(id);
+            if (pmc) pmc->dir = (PushBlockMoveDir)(((int)pmc->dir + 1) % 3);
+
             ColorChanger* cc = comp_arrays.color_changer_arr.Get(id);
             if (cc) {
                 if (cc->mode == ColorBlendMode::Additive) cc->mode = ColorBlendMode::Subtractive;

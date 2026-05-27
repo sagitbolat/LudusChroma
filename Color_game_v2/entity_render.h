@@ -8,35 +8,37 @@ extern Sprite color_changer_additive_sprite;
 extern Sprite color_changer_subtractive_sprite;
 
 // Sprite index constants — must match the sprite array loaded in game.cpp
-#define SPR_PLAYER_NEUTRAL  0
-#define SPR_PLAYER_UP       1
-#define SPR_PLAYER_DOWN     2
-#define SPR_PLAYER_LEFT     3
-#define SPR_PLAYER_RIGHT    4
-#define SPR_PUSH_BLOCK      5
-#define SPR_STATIC_BLOCK    6
-#define SPR_EMITTER         7
-#define SPR_EMITTER_NOZZLE  8
-#define SPR_RECEIVER        10
-#define SPR_RECEIVER_SIGNAL 11
-#define SPR_RECEIVER_COLOR  12
-#define SPR_DOOR_OPEN_V     13
-#define SPR_DOOR_CLOSED_V   14
-#define SPR_DOOR_OPEN_H     15
-#define SPR_DOOR_CLOSED_H   16
-#define SPR_ENDGOAL         17
-#define SPR_BUTTON_UP       18
-#define SPR_BUTTON_DOWN     19
-#define SPR_TELEPORTER      20
-#define SPR_COLOR_CHANGER   21
-#define SPR_CC_FRAME        22
-#define SPR_CC_OVERLAY      23
-#define SPR_COLOR_PUDDLE    24
-#define SPR_SUIT_NEUTRAL    25
-#define SPR_SUIT_UP         26
-#define SPR_SUIT_DOWN       27
-#define SPR_SUIT_LEFT       28
-#define SPR_SUIT_RIGHT      29
+#define SPR_PLAYER_NEUTRAL   0
+#define SPR_PLAYER_UP        1
+#define SPR_PLAYER_DOWN      2
+#define SPR_PLAYER_LEFT      3
+#define SPR_PLAYER_RIGHT     4
+#define SPR_PUSH_BLOCK       5
+#define SPR_STATIC_BLOCK     6
+#define SPR_EMITTER          7
+#define SPR_EMITTER_NOZZLE   8
+#define SPR_RECEIVER         10
+#define SPR_RECEIVER_SIGNAL  11
+#define SPR_RECEIVER_COLOR   12
+#define SPR_DOOR_OPEN_V      13
+#define SPR_DOOR_CLOSED_V    14
+#define SPR_DOOR_OPEN_H      15
+#define SPR_DOOR_CLOSED_H    16
+#define SPR_ENDGOAL          17
+#define SPR_BUTTON_UP        18
+#define SPR_BUTTON_DOWN      19
+#define SPR_TELEPORTER       20
+#define SPR_COLOR_CHANGER    21
+#define SPR_CC_FRAME         22
+#define SPR_CC_OVERLAY       23
+#define SPR_COLOR_PUDDLE     24
+#define SPR_SUIT_NEUTRAL     25
+#define SPR_SUIT_UP          26
+#define SPR_SUIT_DOWN        27
+#define SPR_SUIT_LEFT        28
+#define SPR_SUIT_RIGHT       29
+#define SPR_PUSH_BLOCK_HORIZ 30
+#define SPR_PUSH_BLOCK_VERT  31
 
 // ============================================================
 // Internal helpers — UV clipping for split-sprite rendering
@@ -545,7 +547,13 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
         t.position.y += rendering_top ? 0.5f : -0.5f;
         if (rendering_top) UVTopHalf(shaders); else UVBottomHalf(shaders);
         if (ct) ColorMul(shaders, ct->color, !level_transitioning);
-        DrawSprite(sprites[SPR_PUSH_BLOCK], t, main_camera);
+        
+        PushMoveConstraint* pmc = ca->push_move_constraint_arr.Get(entity_id);
+
+        if(pmc->dir == PushBlockMoveDir::Default)DrawSprite(sprites[SPR_PUSH_BLOCK], t, main_camera);
+        if(pmc->dir == PushBlockMoveDir::HorizontalOnly)DrawSprite(sprites[SPR_PUSH_BLOCK_HORIZ], t, main_camera);
+        if(pmc->dir == PushBlockMoveDir::VerticalOnly)DrawSprite(sprites[SPR_PUSH_BLOCK_VERT], t, main_camera);
+        
         if (ct) ColorMulReset(shaders, !level_transitioning);
         UVReset(shaders);
         goto done;

@@ -131,7 +131,7 @@ int num_players                 = 0;
 
 LevelStateInfo level_info = {};
 
-Sprite sprites[30];
+Sprite sprites[32];
 Sprite emission_sprite;
 Sprite wire_sprite;
 Sprite tileset_sprite_asset;
@@ -306,7 +306,7 @@ void Awake(GameMemory* gm) {
     color_changer_additive_sprite  = LoadSprite("assets/color_changer_additive.png",    shaders, gpu_buffers);
     color_changer_subtractive_sprite = LoadSprite("assets/color_changer_subtractive.png", shaders, gpu_buffers);
 
-    Sprite tmp[30] = {
+    Sprite tmp[32] = {
         LoadSprite("assets/player.png",               shaders, gpu_buffers), // 0
         LoadSprite("assets/player_up.png",            shaders, gpu_buffers), // 1
         LoadSprite("assets/player_down.png",          shaders, gpu_buffers), // 2
@@ -337,8 +337,10 @@ void Awake(GameMemory* gm) {
         LoadSprite("assets/player_down_suit.png",     shaders, gpu_buffers), // 27
         LoadSprite("assets/player_left_suit.png",     shaders, gpu_buffers), // 28
         LoadSprite("assets/player_right_suit.png",    shaders, gpu_buffers), // 29
+        LoadSprite("assets/push_block_horizontal.png",shaders, gpu_buffers), // 30
+        LoadSprite("assets/push_block_vertical.png",  shaders, gpu_buffers), // 31
     };
-    for (int i = 0; i < 30; ++i) sprites[i] = tmp[i];
+    for (int i = 0; i < 32; ++i) sprites[i] = tmp[i];
 
     door_open_sheet       = MakeSpriteSheet(LoadSprite("assets/door_open_anim.png",   shaders, gpu_buffers), 9, 1, 9);
     door_close_sheet      = MakeSpriteSheet(LoadSprite("assets/door_close_anim.png",  shaders, gpu_buffers), 9, 1, 9);

@@ -1,9 +1,11 @@
 ﻿# TODO: 
 - [DONE] Fix player collision when using different orientations 
-- Add all the levels to the game.cpp arrays. 
+- [DONE] Add all the levels to the game.cpp arrays. 
 - Add more levels for the other new mechanics.
 - [DONE] Animate the teleporter sprites.
 - [WIP] Render the sprite that is next to a teleporter inside the partner teleporter (makes it look like there is something inside the teleporter like a portal from portal game.)
+- [] Dialog System for a story for the game.
+
 
 # Features TODO:
 - [TODO] Add a color switcher entity that swithces the clear color when activated with a button or reciever. When deactivated, goes back to the normal color. 

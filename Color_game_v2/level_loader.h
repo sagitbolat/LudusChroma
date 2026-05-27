@@ -137,10 +137,12 @@ static void WriteEntityRecord(int entity_id, ComponentArrays* ca, FILE* f) {
         WriteU32((uint32_t)pos.x, f); WriteU32((uint32_t)pos.y, f);
         WriteColor(ct ? ct->color : Color{230,230,230,255}, f);
     } else if (ca->grid_mover_arr.Get(entity_id)) {
-        ColorTag* ct = ca->color_tag_arr.Get(entity_id);
+        ColorTag*          ct  = ca->color_tag_arr.Get(entity_id);
+        PushMoveConstraint* pmc = ca->push_move_constraint_arr.Get(entity_id);
         WriteU32((uint32_t)EntityTypeV2::PushBlock, f);
         WriteU32((uint32_t)pos.x, f); WriteU32((uint32_t)pos.y, f);
         WriteColor(ct ? ct->color : Color{ 255, 255, 255, 255 }, f);
+        WriteU32((uint32_t)(pmc ? pmc->dir : PushBlockMoveDir::Default), f);
     } else {
         WriteU32((uint32_t)EntityTypeV2::StaticBlock, f);
         WriteU32((uint32_t)pos.x, f); WriteU32((uint32_t)pos.y, f);
@@ -210,8 +212,9 @@ static void ReadEntityRecord(
             break;
         }
         case EntityTypeV2::PushBlock: {
-            Color color = ReadColor(f);
-            PushblockInit(id, ca, { x, y }, color);
+            Color            color    = ReadColor(f);
+            PushBlockMoveDir move_dir = (PushBlockMoveDir)ReadU32(f);
+            PushblockInit(id, ca, { x, y }, color, move_dir);
             entity_map->SetID(x, y, (int)GridLayer::EntityLayer, id);
             break;
         }

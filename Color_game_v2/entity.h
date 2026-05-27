@@ -41,9 +41,10 @@ struct EmissionMap {
 // SECTION: Component definitions
 // ============================================================
 
-enum class Direction      : uint8_t { Up, Right, Down, Left, Neutral };
-enum class ColorBlendMode : uint8_t { Blended, Additive, Subtractive };
-enum class GridLayer      : uint8_t { GroundLayer, EntityLayer };
+enum class Direction        : uint8_t { Up, Right, Down, Left, Neutral };
+enum class ColorBlendMode   : uint8_t { Blended, Additive, Subtractive };
+enum class GridLayer        : uint8_t { GroundLayer, EntityLayer };
+enum class PushBlockMoveDir : uint8_t { Default = 0, VerticalOnly = 1, HorizontalOnly = 2 };
 
 #define MOVE_SPEED 0.2f  // seconds per block
 
@@ -135,6 +136,10 @@ struct ColorTag {
     Color color;
 };
 
+struct PushMoveConstraint {
+    PushBlockMoveDir dir = PushBlockMoveDir::Default;
+};
+
 
 // ============================================================
 // SECTION: Entity handle
@@ -168,6 +173,7 @@ struct ComponentArrays {
     SparseSet<Teleporter>           teleporter_arr;
     SparseSet<ColorChanger>         color_changer_arr;
     SparseSet<ColorTag>             color_tag_arr;
+    SparseSet<PushMoveConstraint>   push_move_constraint_arr;
 
     void Init(int initial_capacity) {
         grid_position_arr.Init(initial_capacity);
@@ -184,6 +190,7 @@ struct ComponentArrays {
         teleporter_arr.Init(initial_capacity);
         color_changer_arr.Init(initial_capacity);
         color_tag_arr.Init(initial_capacity);
+        push_move_constraint_arr.Init(initial_capacity);
     }
 
     void Clear() {
@@ -201,6 +208,7 @@ struct ComponentArrays {
         teleporter_arr.Clear();
         color_changer_arr.Clear();
         color_tag_arr.Clear();
+        push_move_constraint_arr.Clear();
     }
 };
 
@@ -232,12 +240,14 @@ void PlayerInit(int id, ComponentArrays* ca, Vector2Int pos, Direction orientati
     ca->color_tag_arr.Insert(id, ColorTag{ color });
 }
 
-void PushblockInit(int id, ComponentArrays* ca, Vector2Int pos, Color color = { 255, 255, 255, 255 }) {
+void PushblockInit(int id, ComponentArrays* ca, Vector2Int pos, Color color = { 255, 255, 255, 255 },
+                   PushBlockMoveDir move_dir = PushBlockMoveDir::Default) {
     ca->grid_position_arr.Insert(id, GridPosition{ pos, pos, GridLayer::EntityLayer });
     ca->grid_mover_arr.Insert(id, GridMover{});
     ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::EntityLayer));
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::Absorb });
     ca->color_tag_arr.Insert(id, ColorTag{ color });
+    ca->push_move_constraint_arr.Insert(id, PushMoveConstraint{ move_dir });
 }
 
 void StaticBlockInit(int id, ComponentArrays* ca, Vector2Int pos) {
@@ -408,6 +418,20 @@ bool EntityMove(
         if (ca->grid_player_controlled_arr.Get(blocking_id)) return false;
         bool pushed = EntityMove(blocking_id, direction, tilemap, entity_map, ca, move_weight - 1);
         if (!pushed) return false;
+    }
+
+    // Check if the pushblock is moving in the correct direction for vertical and horizontal only pushblocks
+    PushMoveConstraint* pmc = ca->push_move_constraint_arr.Get(entity_id);
+    if (pmc) {
+        // trying to move horizontally
+        if (direction.x != 0 && direction.y == 0) {
+            if (pmc->dir == PushBlockMoveDir::VerticalOnly) return false;
+        }
+        // trying to move vertically
+        if (direction.x == 0 && direction.y != 0) {
+            if (pmc->dir == PushBlockMoveDir::HorizontalOnly) return false;
+        }
+
     }
 
     // Commit the move

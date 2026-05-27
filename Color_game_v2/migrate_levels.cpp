@@ -13,6 +13,14 @@
 //        migrate.exe --add-upwards-dir <dir>
 //      Inserts Direction::Up (0) as upwards_direction for each Player in-place.
 //
+//   4. v2+upwards-dir -> v2+endgoal-color (add color to Endgoals):
+//        migrate.exe --add-endgoal-color <dir>
+//      Inserts DEFAULT_WHITE color for each Endgoal in-place.
+//
+//   5. v2+endgoal-color -> v2+push-move-dir (add PushMoveConstraint to PushBlocks):
+//        migrate.exe --add-push-move-dir <dir>
+//      Inserts PushBlockMoveDir::Default (0) for each PushBlock in-place.
+//
 // Compile (standalone, no engine deps):
 //   g++ -o migrate.exe migrate_levels.cpp
 
@@ -308,9 +316,10 @@ static const char* v1_level_names[] = {
 // Level list — current v2 files (matches game.cpp level_names[])
 // ============================================================
 static const char* v2_level_names[] = {
-    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-    "20", "21", "22", "23", "24", "25", "26",
+    "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+    "30", "31", "32", "33",
     nullptr
 };
 
@@ -578,6 +587,90 @@ static void MigrateLevelAddEndgoalColor(const char* in_path, const char* out_pat
     printf("  OK  %-30s  (%d endgoals patched)\n", out_path, endgoals_patched);
 }
 
+// Format AFTER --add-endgoal-color, BEFORE --add-push-move-dir
+static int V2PostEndgoalColorExtraU32Count(uint32_t type) {
+    switch (type) {
+        case V2_PLAYER:        return 6;  // color[4] + orientation[1] + upwards_direction[1]
+        case V2_PUSH_BLOCK:    return 4;  // color[4]  <-- patched by --add-push-move-dir
+        case V2_STATIC_BLOCK:  return 0;
+        case V2_EMITTER:       return 5;  // color[4] + dir[1]
+        case V2_RECEIVER:      return 14; // color[4] + channels[10]
+        case V2_DOOR:          return 11; // open_by_default[1] + channels[10]
+        case V2_ENDGOAL:       return 4;  // color[4]
+        case V2_BUTTON:        return 10; // channels[10]
+        case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
+        case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        default:               return 0;
+    }
+}
+
+// ============================================================
+// v2+endgoal-color -> v2+push-move-dir  (inserts PushBlockMoveDir::Default into every PushBlock)
+// ============================================================
+static void MigrateLevelAddPushMoveDir(const char* in_path, const char* out_path) {
+    FILE* fin = fopen(in_path, "rb");
+    if (!fin) { printf("  SKIP (not found): %s\n", in_path); return; }
+
+    fseek(fin, 0, SEEK_END);
+    long file_size = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    uint8_t* buf = (uint8_t*)malloc(file_size);
+    fread(buf, 1, file_size, fin);
+    fclose(fin);
+
+    int pos = 0;
+    auto readU32 = [&]() -> uint32_t {
+        uint32_t v = 0;
+        memcpy(&v, buf + pos, 4);
+        pos += 4;
+        return v;
+    };
+
+    uint32_t width        = readU32();
+    uint32_t height       = readU32();
+    uint32_t num_floor    = readU32();
+    uint32_t num_entities = readU32();
+
+    FILE* fout = fopen(out_path, "wb");
+    if (!fout) {
+        printf("  FAIL (cannot write): %s\n", out_path);
+        free(buf);
+        return;
+    }
+
+    WriteU32(width,        fout);
+    WriteU32(height,       fout);
+    WriteU32(num_floor,    fout);
+    WriteU32(num_entities, fout);
+
+    int tilemap_bytes = (int)(width * height * 2);
+    fwrite(buf + pos, 1, tilemap_bytes, fout);
+    pos += tilemap_bytes;
+
+    int pushblocks_patched = 0;
+    for (uint32_t i = 0; i < num_entities; ++i) {
+        uint32_t type = readU32();
+        uint32_t x    = readU32();
+        uint32_t y    = readU32();
+        WriteU32(type, fout);
+        WriteU32(x,    fout);
+        WriteU32(y,    fout);
+
+        int extra = V2PostEndgoalColorExtraU32Count(type);
+        for (int e = 0; e < extra; ++e)
+            WriteU32(readU32(), fout);
+
+        if (type == V2_PUSH_BLOCK) {
+            WriteU32(0u, fout); // PushBlockMoveDir::Default = 0
+            ++pushblocks_patched;
+        }
+    }
+
+    fclose(fout);
+    free(buf);
+    printf("  OK  %-30s  (%d pushblocks patched)\n", out_path, pushblocks_patched);
+}
+
 int main(int argc, char* argv[]) {
     if (argc >= 2 && strcmp(argv[1], "--add-colortag") == 0) {
         if (argc < 3) {
@@ -611,6 +704,22 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    if (argc >= 2 && strcmp(argv[1], "--add-push-move-dir") == 0) {
+        if (argc < 3) {
+            printf("Usage: migrate.exe --add-push-move-dir <dir>\n");
+            printf("  Patches v2+endgoal-color level files in <dir> to add PushBlock move direction.\n");
+            return 1;
+        }
+        const char* dir = argv[2];
+        char path[512];
+        printf("=== v2+endgoal-color -> v2+push-move-dir ===\n");
+        for (int i = 0; v2_level_names[i]; ++i) {
+            snprintf(path, sizeof(path), "%s/%s.level", dir, v2_level_names[i]);
+            MigrateLevelAddPushMoveDir(path, path); // in-place
+        }
+        return 0;
+    }
+
     if (argc >= 2 && strcmp(argv[1], "--add-upwards-dir") == 0) {
         if (argc < 3) {
             printf("Usage: migrate.exe --add-upwards-dir <dir>\n");
@@ -634,6 +743,7 @@ int main(int argc, char* argv[]) {
         printf("  migrate.exe --add-colortag <dir>          (v2 -> v2+colortag)\n");
         printf("  migrate.exe --add-upwards-dir <dir>       (v2+colortag -> v2+upwards-dir)\n");
         printf("  migrate.exe --add-endgoal-color <dir>     (v2+upwards-dir -> v2+endgoal-color)\n");
+        printf("  migrate.exe --add-push-move-dir <dir>     (v2+endgoal-color -> v2+push-move-dir)\n");
         return 1;
     }
     const char* in_dir  = argv[1];
