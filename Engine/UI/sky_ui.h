@@ -1,7 +1,6 @@
 #pragma once
 #include "../sky_structs.h"
-
-struct ImFont;
+#include "imgui/imgui.h"
 
 // NOTE: Goes in order Y_X. Used for UI alignment 
 enum UI_Alignment {

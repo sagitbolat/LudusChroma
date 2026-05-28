@@ -21,6 +21,10 @@
 //        migrate.exe --add-push-move-dir <dir>
 //      Inserts PushBlockMoveDir::Default (0) for each PushBlock in-place.
 //
+//   6. v2+push-move-dir -> v2+color-switcher-mode (add ColorSwitcherMode to level header):
+//        migrate.exe --add-color-switcher-mode <dir>
+//      Inserts ColorSwitcherMode::Default (1) as the 5th header u32 in each level file.
+//
 // Compile (standalone, no engine deps):
 //   g++ -o migrate.exe migrate_levels.cpp
 
@@ -319,9 +323,40 @@ static const char* v2_level_names[] = {
     "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
-    "30", "31", "32", "33",
+    "30", "31", "32", "33", "34", "35",
     nullptr
 };
+
+// ============================================================
+// File-size validator: returns true if buf matches the expected format.
+// header_u32_count: number of u32s before the tilemap.
+// extra_count_fn: extra u32s after [type][x][y] for each entity type.
+// ============================================================
+static bool FileSizeMatchesFormat(const uint8_t* buf, long file_size,
+                                   int header_u32_count,
+                                   int(*extra_count_fn)(uint32_t)) {
+    if (file_size < (long)(header_u32_count * 4)) return false;
+
+    uint32_t width, height, num_entities;
+    memcpy(&width,        buf + 0,  4);
+    memcpy(&height,       buf + 4,  4);
+    memcpy(&num_entities, buf + 12, 4); // always 4th u32 in header
+
+    long expected = (long)(header_u32_count * 4);
+    expected += (long)(width * height * 2); // tilemap
+
+    int entity_pos = header_u32_count * 4 + (int)(width * height * 2);
+    for (uint32_t i = 0; i < num_entities; ++i) {
+        if (entity_pos + 12 > (int)file_size) return false;
+        uint32_t type;
+        memcpy(&type, buf + entity_pos, 4);
+        int extra = extra_count_fn(type);
+        expected += 12 + extra * 4;
+        entity_pos += 12 + extra * 4;
+    }
+
+    return file_size == expected;
+}
 
 // ============================================================
 // Extra u32 count per v2 entity type AFTER [type][x][y]
@@ -376,6 +411,12 @@ static void MigrateLevelAddColorTag(const char* in_path, const char* out_path) {
     uint8_t* buf = (uint8_t*)malloc(file_size);
     fread(buf, 1, file_size, fin);
     fclose(fin);
+
+    if (!FileSizeMatchesFormat(buf, file_size, 4, V2ExtraU32Count)) {
+        printf("  SKIP (already migrated): %s\n", in_path);
+        free(buf);
+        return;
+    }
 
     int pos = 0;
     auto readU32 = [&]() -> uint32_t {
@@ -446,6 +487,12 @@ static void MigrateLevelAddUpwardsDir(const char* in_path, const char* out_path)
     uint8_t* buf = (uint8_t*)malloc(file_size);
     fread(buf, 1, file_size, fin);
     fclose(fin);
+
+    if (!FileSizeMatchesFormat(buf, file_size, 4, V2PostColortagExtraU32Count)) {
+        printf("  SKIP (already migrated): %s\n", in_path);
+        free(buf);
+        return;
+    }
 
     int pos = 0;
     auto readU32 = [&]() -> uint32_t {
@@ -531,6 +578,12 @@ static void MigrateLevelAddEndgoalColor(const char* in_path, const char* out_pat
     fread(buf, 1, file_size, fin);
     fclose(fin);
 
+    if (!FileSizeMatchesFormat(buf, file_size, 4, V2PostUpwardsDirExtraU32Count)) {
+        printf("  SKIP (already migrated): %s\n", in_path);
+        free(buf);
+        return;
+    }
+
     int pos = 0;
     auto readU32 = [&]() -> uint32_t {
         uint32_t v = 0;
@@ -604,6 +657,23 @@ static int V2PostEndgoalColorExtraU32Count(uint32_t type) {
     }
 }
 
+// Format AFTER --add-push-move-dir, BEFORE --add-color-switcher-mode
+static int V2PostPushMoveDirExtraU32Count(uint32_t type) {
+    switch (type) {
+        case V2_PLAYER:        return 6;  // color[4] + orientation[1] + upwards_direction[1]
+        case V2_PUSH_BLOCK:    return 5;  // color[4] + move_dir[1]
+        case V2_STATIC_BLOCK:  return 0;
+        case V2_EMITTER:       return 5;  // color[4] + dir[1]
+        case V2_RECEIVER:      return 14; // color[4] + channels[10]
+        case V2_DOOR:          return 11; // open_by_default[1] + channels[10]
+        case V2_ENDGOAL:       return 4;  // color[4]
+        case V2_BUTTON:        return 10; // channels[10]
+        case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
+        case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        default:               return 0;
+    }
+}
+
 // ============================================================
 // v2+endgoal-color -> v2+push-move-dir  (inserts PushBlockMoveDir::Default into every PushBlock)
 // ============================================================
@@ -617,6 +687,12 @@ static void MigrateLevelAddPushMoveDir(const char* in_path, const char* out_path
     uint8_t* buf = (uint8_t*)malloc(file_size);
     fread(buf, 1, file_size, fin);
     fclose(fin);
+
+    if (!FileSizeMatchesFormat(buf, file_size, 4, V2PostEndgoalColorExtraU32Count)) {
+        printf("  SKIP (already migrated): %s\n", in_path);
+        free(buf);
+        return;
+    }
 
     int pos = 0;
     auto readU32 = [&]() -> uint32_t {
@@ -671,6 +747,62 @@ static void MigrateLevelAddPushMoveDir(const char* in_path, const char* out_path
     printf("  OK  %-30s  (%d pushblocks patched)\n", out_path, pushblocks_patched);
 }
 
+// ============================================================
+// v2+push-move-dir -> v2+color-switcher-mode
+// Inserts ColorSwitcherMode::Default (1) as a 5th header u32, before the tilemap.
+// ============================================================
+static void MigrateLevelAddColorSwitcherMode(const char* in_path, const char* out_path) {
+    FILE* fin = fopen(in_path, "rb");
+    if (!fin) { printf("  SKIP (not found): %s\n", in_path); return; }
+
+    fseek(fin, 0, SEEK_END);
+    long file_size = ftell(fin);
+    fseek(fin, 0, SEEK_SET);
+    uint8_t* buf = (uint8_t*)malloc(file_size);
+    fread(buf, 1, file_size, fin);
+    fclose(fin);
+
+    if (!FileSizeMatchesFormat(buf, file_size, 4, V2PostPushMoveDirExtraU32Count)) {
+        printf("  SKIP (already migrated): %s\n", in_path);
+        free(buf);
+        return;
+    }
+
+    int pos = 0;
+    auto readU32 = [&]() -> uint32_t {
+        uint32_t v = 0;
+        memcpy(&v, buf + pos, 4);
+        pos += 4;
+        return v;
+    };
+
+    uint32_t width        = readU32();
+    uint32_t height       = readU32();
+    uint32_t num_floor    = readU32();
+    uint32_t num_entities = readU32();
+
+    FILE* fout = fopen(out_path, "wb");
+    if (!fout) {
+        printf("  FAIL (cannot write): %s\n", out_path);
+        free(buf);
+        return;
+    }
+
+    WriteU32(width,        fout);
+    WriteU32(height,       fout);
+    WriteU32(num_floor,    fout);
+    WriteU32(num_entities, fout);
+    WriteU32(1u,           fout); // ColorSwitcherMode::Default = 1
+
+    // Copy remainder (tilemap + entity records) unchanged
+    int remaining = (int)(file_size - pos);
+    fwrite(buf + pos, 1, remaining, fout);
+
+    fclose(fout);
+    free(buf);
+    printf("  OK  %s\n", out_path);
+}
+
 int main(int argc, char* argv[]) {
     if (argc >= 2 && strcmp(argv[1], "--add-colortag") == 0) {
         if (argc < 3) {
@@ -720,6 +852,22 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    if (argc >= 2 && strcmp(argv[1], "--add-color-switcher-mode") == 0) {
+        if (argc < 3) {
+            printf("Usage: migrate.exe --add-color-switcher-mode <dir>\n");
+            printf("  Patches v2+push-move-dir level files in <dir> to add ColorSwitcherMode header field.\n");
+            return 1;
+        }
+        const char* dir = argv[2];
+        char path[512];
+        printf("=== v2+push-move-dir -> v2+color-switcher-mode ===\n");
+        for (int i = 0; v2_level_names[i]; ++i) {
+            snprintf(path, sizeof(path), "%s/%s.level", dir, v2_level_names[i]);
+            MigrateLevelAddColorSwitcherMode(path, path); // in-place
+        }
+        return 0;
+    }
+
     if (argc >= 2 && strcmp(argv[1], "--add-upwards-dir") == 0) {
         if (argc < 3) {
             printf("Usage: migrate.exe --add-upwards-dir <dir>\n");
@@ -743,7 +891,8 @@ int main(int argc, char* argv[]) {
         printf("  migrate.exe --add-colortag <dir>          (v2 -> v2+colortag)\n");
         printf("  migrate.exe --add-upwards-dir <dir>       (v2+colortag -> v2+upwards-dir)\n");
         printf("  migrate.exe --add-endgoal-color <dir>     (v2+upwards-dir -> v2+endgoal-color)\n");
-        printf("  migrate.exe --add-push-move-dir <dir>     (v2+endgoal-color -> v2+push-move-dir)\n");
+        printf("  migrate.exe --add-push-move-dir <dir>         (v2+endgoal-color -> v2+push-move-dir)\n");
+        printf("  migrate.exe --add-color-switcher-mode <dir>  (v2+push-move-dir -> v2+color-switcher-mode)\n");
         return 1;
     }
     const char* in_dir  = argv[1];

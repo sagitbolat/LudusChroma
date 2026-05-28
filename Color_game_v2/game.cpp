@@ -66,7 +66,7 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
 // SECTION: Level list
 // ============================================================
 
-const int NUM_LEVELS = 35;
+const int NUM_LEVELS = 36;
 int curr_level_index = 0;
 
 
@@ -111,7 +111,13 @@ LevelParams levels[] = {
     {"31", 20.f},
     {"32", 14.f},
     {"33", 20.f},
-    {"34", 17.f}
+    {"34", 17.f},
+    {"35", 17.f},
+    {"36", 14.f},
+    {"37", 20.f},
+    {"38", 20.f},
+    {"39", 20.f},
+    {"49", 20.f},
 };
 
 

@@ -10,7 +10,7 @@
 // ============================================================
 // V2 Level File Format
 // ============================================================
-// Header:   [width u32][height u32][num_floor_types u32][num_entities u32]
+// Header:   [width u32][height u32][num_floor_types u32][num_entities u32][color_switcher_mode u32]
 // Tilemap:  width * height  uint16 tile values
 // Entities: num_entities records, each:
 //   [entity_type u32][pos_x u32][pos_y u32]
@@ -22,6 +22,7 @@
 
 const char level_directory[]       = "levels";
 const char level_filetype_extension[] = "level";
+
 
 enum class EntityTypeV2 : uint32_t {
     Player       = 0,
@@ -36,9 +37,16 @@ enum class EntityTypeV2 : uint32_t {
     ColorChanger = 9,
 };
 
+enum class ColorSwitcherMode : uint32_t {
+    Disabled = 0,
+    Default  = 1,
+    // reserved for different color switching behavior for later game levels
+};
+
 struct LevelStateInfo {
-    int num_floor_tile_types;
-    int num_entities;
+    int               num_floor_tile_types;
+    int               num_entities;
+    ColorSwitcherMode color_switcher_mode = ColorSwitcherMode::Default;
 };
 
 
@@ -150,11 +158,12 @@ static void WriteEntityRecord(int entity_id, ComponentArrays* ca, FILE* f) {
 }
 
 void SaveLevelState(
-    const char*      level_name,
-    Tilemap*         tilemap,
-    int              num_floor_tile_types,
-    ComponentArrays* ca,
-    int              num_entities
+    const char*       level_name,
+    Tilemap*          tilemap,
+    int               num_floor_tile_types,
+    ComponentArrays*  ca,
+    int               num_entities,
+    ColorSwitcherMode color_switcher_mode = ColorSwitcherMode::Default
 ) {
     char filepath[256]{};
     snprintf(filepath, sizeof(filepath), "%s/%s.%s", level_directory, level_name, level_filetype_extension);
@@ -166,6 +175,7 @@ void SaveLevelState(
     WriteU32((uint32_t)tilemap->height,         f);
     WriteU32((uint32_t)num_floor_tile_types,    f);
     WriteU32((uint32_t)num_entities,            f);
+    WriteU32((uint32_t)color_switcher_mode,     f);
 
     for (int y = 0; y < tilemap->height; ++y)
         for (int x = 0; x < tilemap->width; ++x) {
@@ -292,10 +302,11 @@ LevelStateInfo ReadLevelState(
     FILE* f = fopen(filepath, "rb");
     if (!f) { printf("ReadLevelState: cannot open %s\n", filepath); return { -1, -1 }; }
 
-    int w            = (int)ReadU32(f);
-    int h            = (int)ReadU32(f);
-    int num_floor    = (int)ReadU32(f);
-    int num_entities = (int)ReadU32(f);
+    int               w               = (int)ReadU32(f);
+    int               h               = (int)ReadU32(f);
+    int               num_floor       = (int)ReadU32(f);
+    int               num_entities    = (int)ReadU32(f);
+    ColorSwitcherMode cs_mode         = (ColorSwitcherMode)ReadU32(f);
 
     // (Re)allocate tilemap
     tilemap->width  = w;
@@ -336,5 +347,5 @@ LevelStateInfo ReadLevelState(
 
     fclose(f);
     printf("ReadLevelState: loaded %s (%d entities, %d players)\n", filepath, loaded, *num_players);
-    return { num_floor, loaded };
+    return { num_floor, loaded, cs_mode };
 }

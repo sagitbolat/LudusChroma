@@ -411,15 +411,7 @@ bool EntityMove(
             if (door && !door->is_open) return false;
         }
     }
-
-    // Check entity layer for a blocking entity; try to push it
-    int blocking_id = entity_map.GetID(new_pos.x, new_pos.y, (int)gp->layer);
-    if (blocking_id >= 0) {
-        if (ca->grid_player_controlled_arr.Get(blocking_id)) return false;
-        bool pushed = EntityMove(blocking_id, direction, tilemap, entity_map, ca, move_weight - 1);
-        if (!pushed) return false;
-    }
-
+    
     // Check if the pushblock is moving in the correct direction for vertical and horizontal only pushblocks
     PushMoveConstraint* pmc = ca->push_move_constraint_arr.Get(entity_id);
     if (pmc) {
@@ -433,6 +425,15 @@ bool EntityMove(
         }
 
     }
+
+    // Check entity layer for a blocking entity; try to push it
+    int blocking_id = entity_map.GetID(new_pos.x, new_pos.y, (int)gp->layer);
+    if (blocking_id >= 0) {
+        if (ca->grid_player_controlled_arr.Get(blocking_id)) return false;
+        bool pushed = EntityMove(blocking_id, direction, tilemap, entity_map, ca, move_weight - 1);
+        if (!pushed) return false;
+    }
+
 
     // Commit the move
     entity_map.SetID(gp->position.x, gp->position.y, (int)gp->layer, -1);

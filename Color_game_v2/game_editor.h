@@ -78,6 +78,7 @@ static void EditorSaveLevel(const char* name) {
     WriteU32((uint32_t)tilemap.height, f);
     WriteU32((uint32_t)level_info.num_floor_tile_types, f);
     WriteU32((uint32_t)num_live, f);
+    WriteU32((uint32_t)level_info.color_switcher_mode, f);
     for (int y = 0; y < tilemap.height; ++y)
         for (int x = 0; x < tilemap.width; ++x) {
             uint16_t tile = (uint16_t)tilemap.map[y * tilemap.width + x];
@@ -127,6 +128,15 @@ void EditorUpdate(KeyboardState* ks, double dt) {
     DrawSimpleTextbox("##lvl", ed_name, 255, { U*10.15f, 0.35f }, { 108, 0 });
     if (DrawSimpleButton("Save", { U*10.05f, 0.72f }, { U*0.75f, 0.23f }, nullptr)) EditorSaveLevel(ed_name);
     if (DrawSimpleButton("Load", { U*11.0f,  0.72f }, { U*0.75f, 0.23f }, nullptr)) EditorLoadLevel(ed_name);
+
+    {
+        static const char* cs_items[] = { "CS:Disabled", "CS:Default" };
+        int cs_idx = (int)level_info.color_switcher_mode;
+        ImGui::SetCursorPos(ImVec2((int)(U * 8.1f * 1280), (int)(0.3f * 108)));
+        ImGui::SetNextItemWidth((int)(U * 1.05f * 1280));
+        if (ImGui::Combo("##csmode", &cs_idx, cs_items, 2))
+            level_info.color_switcher_mode = (ColorSwitcherMode)cs_idx;
+    }
 
     UI_WindowEnd();
 

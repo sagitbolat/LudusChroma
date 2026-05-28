@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../Engine/sky_structs.h"
-
 #include "entity.h"
+
 Color hidden_color_array[] = {
     DEFAULT_BLACK,
     DEFAULT_RED,
