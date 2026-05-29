@@ -4,6 +4,8 @@
 - Add more levels for the other new mechanics.
 - [DONE] Animate the teleporter sprites.
 - [WIP] Render the sprite that is next to a teleporter inside the partner teleporter (makes it look like there is something inside the teleporter like a portal from portal game.)
+- [WIP] Add default background color for a level that saves in the level file, or make it part of the level array, with the zoom level.
+- [] Fix bug with player movment where if there is a player then a pushblock then a player, the first player moves but the player behind the block doesnt move until the first player moves out of the way.
 - [] Dialog System for a story for the game.
 
 

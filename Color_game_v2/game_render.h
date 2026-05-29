@@ -119,6 +119,7 @@ static void GameRender() {
         else if (lvl == 1) { t.scale = { 4.f, 1.f, 1.f }; DrawSprite(reload_sprite,      t, main_camera); }
         else if (lvl == 2) { t.scale = { 5.f, 1.f, 1.f }; t.position.y += 0.75f; DrawSprite(undo_sprite,        t, main_camera); }
         else if (lvl == 3) { t.scale = { 7.f, 1.f, 1.f }; DrawSprite(wire_view_sprite,   t, main_camera); }
+        // TODO: add the color switch control panel.
     }
 
     // ---- Pass 1: Tilemap ----

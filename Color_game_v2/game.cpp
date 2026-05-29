@@ -66,7 +66,7 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
 // SECTION: Level list
 // ============================================================
 
-const int NUM_LEVELS = 36;
+const int NUM_LEVELS = 50;
 int curr_level_index = 0;
 
 
@@ -117,7 +117,7 @@ LevelParams levels[] = {
     {"37", 20.f},
     {"38", 20.f},
     {"39", 20.f},
-    {"49", 20.f},
+    {"49", 20.f}
 };
 
 
@@ -148,6 +148,8 @@ Sprite WASD_sprite;
 Sprite reload_sprite;
 Sprite undo_sprite;
 Sprite wire_view_sprite;
+Sprite color_switch_sprite;
+
 Sprite title_text;
 Sprite title_text2;
 Sprite act1_text;
@@ -296,10 +298,12 @@ void Awake(GameMemory* gm) {
     tile_default_transform.rotation = { 0.f, 0.f, 0.f };
     tile_default_transform.scale    = { 1.f, 1.f, 1.f };
 
-    WASD_sprite       = LoadSprite("assets/WASD.png",             shaders, gpu_buffers);
-    reload_sprite     = LoadSprite("assets/restart_control.png",  shaders, gpu_buffers);
-    undo_sprite       = LoadSprite("assets/undo_control.png",     shaders, gpu_buffers);
-    wire_view_sprite  = LoadSprite("assets/wire_view_control.png",shaders, gpu_buffers);
+    WASD_sprite         = LoadSprite("assets/WASD.png",                 shaders, gpu_buffers);
+    reload_sprite       = LoadSprite("assets/restart_control.png",      shaders, gpu_buffers);
+    undo_sprite         = LoadSprite("assets/undo_control.png",         shaders, gpu_buffers);
+    wire_view_sprite    = LoadSprite("assets/wire_view_control.png",    shaders, gpu_buffers);
+    color_switch_sprite = LoadSprite("assets/color_switch_control.png", shaders, gpu_buffers);
+    
     title_text        = LoadSprite("assets/title.png",            shaders, gpu_buffers);
     title_text2       = LoadSprite("assets/title2.png",           shaders, gpu_buffers);
     act1_text         = LoadSprite("assets/act1.png",             shaders, gpu_buffers);
