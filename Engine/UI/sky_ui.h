@@ -1,5 +1,6 @@
 #pragma once
 #include "../sky_structs.h"
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
 
 // NOTE: Goes in order Y_X. Used for UI alignment 
