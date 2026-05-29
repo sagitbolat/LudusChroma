@@ -109,13 +109,13 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
     }
 
     // ---- Act 2 interstitial ----
-    if (curr_level_index == 13 && !played_act2_card) {
+    /*if (curr_level_index == 13 && !played_act2_card) {
         played_act2_card = true;
         first_load = true;
         act2_timer = 0.f;
         scene_manager.SwitchScene(1, gs, ks, dt);
         return;
-    }
+    }*/
 
     // ---- Editor mode (Tab toggles) ----
     if (ks->state.TAB && !ks->prev_state.TAB) {
