@@ -479,6 +479,7 @@ GL_ID* LoadTexture(const char* image_path, unsigned int* width_p, unsigned int* 
 
     while (glGetError() != GL_NO_ERROR) {} // flush errors from earlier init
 
+    GLenum error;
     // NOTE: Generate a texture and bind it to current state/context
     GLuint texture;
     glGenTextures(1, &texture);
