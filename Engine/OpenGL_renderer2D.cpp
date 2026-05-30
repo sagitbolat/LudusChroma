@@ -476,17 +476,14 @@ GL_ID* LoadTexture(const char* image_path, unsigned int* width_p, unsigned int* 
 
     if (width_p != nullptr) *width_p = width;
     if (height_p != nullptr) *height_p = height;
+
+    while (glGetError() != GL_NO_ERROR) {} // flush errors from earlier init
+
     // NOTE: Generate a texture and bind it to current state/context
     GLuint texture;
-    glGenTextures(1, &texture); 
+    glGenTextures(1, &texture);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-
-    GLenum error;
-    error = glGetError();
-    if (error != GL_NO_ERROR) {
-        printf("ERROR: LoadSprite::%s::0x%x\n", image_path, error);
-    }
 
     // NOTE: Generate the mipmap
     glTexImage2D(GL_TEXTURE_2D, 0, gl_format, width, height, 0, gl_format, GL_UNSIGNED_BYTE, data);
