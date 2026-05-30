@@ -236,7 +236,7 @@ void SetClearColor(fColor color) {
 // SECTION: Rendering
 
 WindowContext* InitWindowContext(int width, int height, const char* window_name, fColor clear_color, bool fullscreen) {
-    WindowContext* window_context = (WindowContext*)malloc(sizeof(WindowContext*)); 
+    WindowContext* window_context = (WindowContext*)malloc(sizeof(WindowContext));
 
 
     // Initialize SDL
@@ -278,6 +278,8 @@ WindowContext* InitWindowContext(int width, int height, const char* window_name,
     if (glewError != GLEW_OK) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize GLEW: %s", glewGetErrorString(glewError));
     }
+    // glewInit() leaves a GL_INVALID_ENUM in the error queue on Core Profile drivers — flush it.
+    while (glGetError() != GL_NO_ERROR) {}
 
     // Print some OpenGL information
     SDL_Log("OpenGL Version: %s", glGetString(GL_VERSION));
@@ -483,7 +485,7 @@ GL_ID* LoadTexture(const char* image_path, unsigned int* width_p, unsigned int* 
     GLenum error;
     error = glGetError();
     if (error != GL_NO_ERROR) {
-        printf("ERROR: LoadSprite::%s::%s \n", image_path, error);
+        printf("ERROR: LoadSprite::%s::0x%x\n", image_path, error);
     }
 
     // NOTE: Generate the mipmap
@@ -491,14 +493,14 @@ GL_ID* LoadTexture(const char* image_path, unsigned int* width_p, unsigned int* 
     glGenerateMipmap(GL_TEXTURE_2D);
     error = glGetError();
     if (error != GL_NO_ERROR) {
-        printf("ERROR: LoadSprite::%s::%s \n", image_path, error);
+        printf("ERROR: LoadSprite::%s::0x%x\n", image_path, error);
     }
     // NOTE: Enable mirrored repeat for both the S and T axes (the x and y axes)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     error = glGetError();
     if (error != GL_NO_ERROR) {
-        printf("ERROR: LoadSprite::%s::%s \n", image_path, error);
+        printf("ERROR: LoadSprite::%s::0x%x\n", image_path, error);
     }
 
     // NOTE: For better scaling we use mipmapping. We set the filter to be the point filter
@@ -509,7 +511,7 @@ GL_ID* LoadTexture(const char* image_path, unsigned int* width_p, unsigned int* 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     error = glGetError();
     if (error != GL_NO_ERROR) {
-        printf("ERROR: LoadSprite::%s::%s \n", image_path, error);
+        printf("ERROR: LoadSprite::%s::0x%x\n", image_path, error);
     }
    
     //int max = 0;
