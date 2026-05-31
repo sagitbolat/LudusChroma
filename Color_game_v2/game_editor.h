@@ -302,5 +302,8 @@ void EditorUpdate(KeyboardState* ks, double dt) {
         strncpy(ed_name, levels[ed_level_idx].name, 255);
         EditorLoadLevel(ed_name);
         curr_level_index = ed_level_idx + 1;
+        main_camera.width  = levels[ed_level_idx].zoom;
+        main_camera.height = (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH * main_camera.width;
+        CenterCamera();
     }
 }
