@@ -3,19 +3,20 @@
 #include "../Engine/sky_structs.h"
 #include "entity.h"
 
+const int num_hidden_colors = 4;
 Color hidden_color_array[] = {
     DEFAULT_BLACK,
     DEFAULT_RED,
-    DEFAULT_YELLOW,
+    //DEFAULT_YELLOW,
     DEFAULT_GREEN,
-    DEFAULT_CYAN,
-    DEFAULT_BLUE,
-    DEFAULT_MAGENTA
+    //DEFAULT_CYAN,
+    DEFAULT_BLUE
+    //DEFAULT_MAGENTA
 };
 
 uint8_t curr_hidden_color = 0;
 
-#define MAX_SHAKE_ENTRIES 16
+#define MAX_SHAKE_ENTRIES 64
 const float SHAKE_DURATION = 400.f;
 struct ShakeEntry { int entity_id; float timer; };
 ShakeEntry shake_entries[MAX_SHAKE_ENTRIES] = {};
@@ -45,7 +46,7 @@ bool CheckHiddenColorSwitch(EntityMap* entity_map, ComponentArrays* component_ar
 
 void CommitHiddenColorSwitch(EntityMap* entity_map, ComponentArrays* component_arrays) {
     int prev_color = curr_hidden_color;
-    int next_color = (curr_hidden_color + 1) % 7;
+    int next_color = (curr_hidden_color + 1) % num_hidden_colors;
     curr_hidden_color = next_color;
 
     for (const int entity_id : component_arrays->color_tag_arr.dense_ids) {

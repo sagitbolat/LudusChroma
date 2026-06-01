@@ -354,7 +354,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
             if (level_info.color_switcher_mode == ColorSwitcherMode::Default && 
                 CheckHiddenColorSwitch(&entity_map, &comp_arrays)) 
             {
-                uint8_t next_idx      = (curr_hidden_color + 1) % 7;
+                uint8_t next_idx      = (curr_hidden_color + 1) % num_hidden_colors;
                 iris_overlay_color    = hidden_color_array[next_idx];
                 iris_masked_tag_color = hidden_color_array[next_idx];
                 iris_revealing_color  = hidden_color_array[curr_hidden_color];

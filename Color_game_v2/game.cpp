@@ -66,7 +66,7 @@ void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* cle
 // SECTION: Level list
 // ============================================================
 
-const int NUM_LEVELS = 40;
+const int NUM_LEVELS = 43;
 int curr_level_index = 0;
 
 
@@ -111,13 +111,15 @@ LevelParams levels[] = {
     {"30", 14.f},
     {"26", 20.f},
     {"25", 20.f},
+    {"42", 20.f},
     {"23", 14.f},
     {"24", 20.f},
     {"36", 14.f},
+    {"40", 20.f},
+    {"41", 20.f},
     {"38", 20.f},
     {"35", 17.f},
     {"37", 20.f}
-
 };
 
 
@@ -257,6 +259,8 @@ static void LoadLevel(int index) {
     UndoReallocate();
     main_camera.width  = levels[index].zoom;
     main_camera.height = (float)SCREEN_HEIGHT / (float)SCREEN_WIDTH * main_camera.width;
+    curr_hidden_color  = 0;
+    SetClearColor(ToFColor(hidden_color_array[0]));
 }
 
 
