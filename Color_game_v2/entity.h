@@ -4,6 +4,20 @@
 #include "tilemap.h"
 
 
+// SECTION: Color Switcher stuff forward decleration
+const int num_hidden_colors = 4;
+Color hidden_color_array[] = {
+    DEFAULT_BLACK,
+    DEFAULT_RED,
+    //DEFAULT_YELLOW,
+    DEFAULT_GREEN,
+    //DEFAULT_CYAN,
+    DEFAULT_BLUE
+    //DEFAULT_MAGENTA
+};
+
+uint8_t curr_hidden_color = 0;
+
 // ============================================================
 // SECTION: Spatial maps
 // ============================================================
@@ -757,6 +771,8 @@ void EntityUpdateColorChanger(int entity_id, ComponentArrays* ca, EntityMap& ent
         case ColorBlendMode::Subtractive: out_color = SubtractColor(input_color, cc->main_color); break;
         default:                          out_color = BlendColor(input_color, cc->main_color);    break;
     }
+    
+    if (out_color == hidden_color_array[curr_hidden_color]) return;
 
     if (is_vertical) cc->vertical_input_color   = out_color;
     else             cc->horizontal_input_color  = out_color;

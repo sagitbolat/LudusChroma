@@ -38,11 +38,11 @@ void TitleUpdate(GameState* gs, KeyboardState* ks, double dt) {
 
     Transform t{};
     t.position.x = float(tilemap.width / 2);
-    t.position.y = main_camera.position.y + 1.f;
-    t.scale      = { 2.25f, 1.f, 1.f };
+    t.position.y = main_camera.position.y + 1.5f;
+    t.scale      = { 2.21621622f * 1.5f, 1.5f, 1.f };
 
     DisplayTextAnim(title_text,  t, 1000.f, 2000.f, 4000.f, 1000.f, 1000.f, title_timer);
-    t.scale      = { 3.3472f * 2.f, 2.f, 1.f };
+    t.scale      = { 3.28378378f * 1.5f, 1.5f, 1.f };
     t.position.y -= 2.f;
     DisplayTextAnim(title_text2, t, 3000.f, 2000.f, 2000.f, 1000.f, 1000.f, title_timer);
 

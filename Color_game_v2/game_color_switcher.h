@@ -3,18 +3,6 @@
 #include "../Engine/sky_structs.h"
 #include "entity.h"
 
-const int num_hidden_colors = 4;
-Color hidden_color_array[] = {
-    DEFAULT_BLACK,
-    DEFAULT_RED,
-    //DEFAULT_YELLOW,
-    DEFAULT_GREEN,
-    //DEFAULT_CYAN,
-    DEFAULT_BLUE
-    //DEFAULT_MAGENTA
-};
-
-uint8_t curr_hidden_color = 0;
 
 #define MAX_SHAKE_ENTRIES 64
 const float SHAKE_DURATION = 400.f;
