@@ -142,6 +142,17 @@ void PlaySoundFromSource(const AudioSource* source, const SoundClip* clip) {
 }
 
 
+void StopSound(const AudioSource* source) {
+    if (source == nullptr) return;
+    alSourceStop(source->al_source->source_id);
+}
+
+void StopSoundAfterLoop(const AudioSource* source) {
+    if (source == nullptr) return;
+    alSourcei(source->al_source->source_id, AL_LOOPING, AL_FALSE);
+}
+
+
 void FreeAudioSource(AudioSource* source) {
     alDeleteSources(1, &(source->al_source->source_id));
     free(source->al_source);

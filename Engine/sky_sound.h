@@ -14,6 +14,8 @@ AudioContext* InitAudioContext();
 SoundClip* LoadSoundClip(const char* sound_file_path);
 AudioSource* LoadAudioSource(bool source_looping = false, float volume = 1.0f); 
 void PlaySoundFromSource(const AudioSource* source, const SoundClip* clip);
+void StopSound(const AudioSource* source);
+void StopSoundAfterLoop(const AudioSource* source);
 void FreeAudioSource(AudioSource* source);
 void FreeSoundClip(SoundClip* sound_clip);
 void FreeAudioContext(AudioContext* ac);
