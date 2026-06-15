@@ -154,6 +154,11 @@ struct PushMoveConstraint {
     PushBlockMoveDir dir = PushBlockMoveDir::Default;
 };
 
+struct Pickup {
+    int  dialogue_id = 0;
+    bool consumed    = false;
+};
+
 
 // ============================================================
 // SECTION: Entity handle
@@ -188,6 +193,7 @@ struct ComponentArrays {
     SparseSet<ColorChanger>         color_changer_arr;
     SparseSet<ColorTag>             color_tag_arr;
     SparseSet<PushMoveConstraint>   push_move_constraint_arr;
+    SparseSet<Pickup>               pickup_arr;
 
     void Init(int initial_capacity) {
         grid_position_arr.Init(initial_capacity);
@@ -205,6 +211,7 @@ struct ComponentArrays {
         color_changer_arr.Init(initial_capacity);
         color_tag_arr.Init(initial_capacity);
         push_move_constraint_arr.Init(initial_capacity);
+        pickup_arr.Init(initial_capacity);
     }
 
     void Clear() {
@@ -223,6 +230,7 @@ struct ComponentArrays {
         color_changer_arr.Clear();
         color_tag_arr.Clear();
         push_move_constraint_arr.Clear();
+        pickup_arr.Clear();
     }
 };
 
@@ -335,6 +343,13 @@ void ColorChangerInit(int id, ComponentArrays* ca, Vector2Int pos, Color color, 
     ca->color_changer_arr.Insert(id, ColorChanger{ color, mode });
     ca->laser_surface_arr.Insert(id, LaserSurface{ LaserSurfaceMode::PassThrough });
     ca->color_tag_arr.Insert(id, ColorTag{ color });
+}
+
+
+void PickupInit(int id, ComponentArrays* ca, Vector2Int pos, int dialogue_id) {
+    ca->grid_position_arr.Insert(id, GridPosition{ pos, pos, GridLayer::GroundLayer });
+    ca->render_transform_arr.Insert(id, MakeRenderTransform(pos, GridLayer::GroundLayer));
+    ca->pickup_arr.Insert(id, Pickup{ dialogue_id, false });
 }
 
 

@@ -35,6 +35,7 @@ enum class EntityTypeV2 : uint32_t {
     Button       = 7,
     Teleporter   = 8,
     ColorChanger = 9,
+    Pickup       = 10,
 };
 
 enum class ColorSwitcherMode : uint32_t {
@@ -139,6 +140,11 @@ static void WriteEntityRecord(int entity_id, ComponentArrays* ca, FILE* f) {
         WriteColor(cc->main_color, f);
         WriteU32((uint32_t)cc->mode, f);
         WriteU32(movable ? 1u : 0u, f);
+    } else if (ca->pickup_arr.Get(entity_id)) {
+        Pickup* pk = ca->pickup_arr.Get(entity_id);
+        WriteU32((uint32_t)EntityTypeV2::Pickup, f);
+        WriteU32((uint32_t)pos.x, f); WriteU32((uint32_t)pos.y, f);
+        WriteU32((uint32_t)pk->dialogue_id, f);
     } else if (ca->endgoal_arr.Get(entity_id)) {
         ColorTag* ct = ca->color_tag_arr.Get(entity_id);
         WriteU32((uint32_t)EntityTypeV2::Endgoal, f);
@@ -283,6 +289,12 @@ static void ReadEntityRecord(
             ColorChangerInit(id, ca, { x, y }, color, mode, movable);
             GridLayer layer = movable ? GridLayer::EntityLayer : GridLayer::GroundLayer;
             entity_map->SetID(x, y, (int)layer, id);
+            break;
+        }
+        case EntityTypeV2::Pickup: {
+            int dialogue_id = (int)ReadU32(f);
+            PickupInit(id, ca, { x, y }, dialogue_id);
+            entity_map->SetID(x, y, (int)GridLayer::GroundLayer, id);
             break;
         }
     }

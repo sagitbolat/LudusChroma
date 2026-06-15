@@ -25,6 +25,9 @@
 //        migrate.exe --add-color-switcher-mode <dir>
 //      Inserts ColorSwitcherMode::Default (1) as the 5th header u32 in each level file.
 //
+// Current format (post --add-color-switcher-mode): entity type 10 = Pickup (1 extra u32: dialogue_id).
+// No migration needed for Pickup — it is a new entity type only placed in new levels via the editor.
+//
 // Compile (standalone, no engine deps):
 //   g++ -o migrate.exe migrate_levels.cpp
 
@@ -65,6 +68,7 @@
 #define V2_BUTTON        7
 #define V2_TELEPORTER    8
 #define V2_COLOR_CHANGER 9
+#define V2_PICKUP        10
 
 // ============================================================
 // V1 entity record (in-memory representation of 64 uint32 blob)
@@ -376,6 +380,7 @@ static int V2ExtraU32Count(uint32_t type) {
         case V2_BUTTON:        return 10; // channels[10]
         case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
         case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        case V2_PICKUP:        return 1;  // dialogue_id[1]
         default:               return 0;
     }
 }
@@ -393,6 +398,7 @@ static int V2PostColortagExtraU32Count(uint32_t type) {
         case V2_BUTTON:        return 10; // channels[10]
         case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
         case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        case V2_PICKUP:        return 1;  // dialogue_id[1]
         default:               return 0;
     }
 }
@@ -560,6 +566,7 @@ static int V2PostUpwardsDirExtraU32Count(uint32_t type) {
         case V2_BUTTON:        return 10; // channels[10]
         case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
         case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        case V2_PICKUP:        return 1;  // dialogue_id[1]
         default:               return 0;
     }
 }
@@ -653,6 +660,7 @@ static int V2PostEndgoalColorExtraU32Count(uint32_t type) {
         case V2_BUTTON:        return 10; // channels[10]
         case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
         case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        case V2_PICKUP:        return 1;  // dialogue_id[1]
         default:               return 0;
     }
 }
@@ -670,6 +678,7 @@ static int V2PostPushMoveDirExtraU32Count(uint32_t type) {
         case V2_BUTTON:        return 10; // channels[10]
         case V2_TELEPORTER:    return 5;  // partner_id[1] + color[4]
         case V2_COLOR_CHANGER: return 6;  // color[4] + mode[1] + movable[1]
+        case V2_PICKUP:        return 1;  // dialogue_id[1]
         default:               return 0;
     }
 }

@@ -26,6 +26,7 @@ static void EditorDeleteEntity(int id) {
     comp_arrays.color_changer_arr.Delete(id);
     comp_arrays.color_tag_arr.Delete(id);
     comp_arrays.push_move_constraint_arr.Delete(id);
+    comp_arrays.pickup_arr.Delete(id);
 }
 
 static void EditorNewLevel(int w, int h) {
@@ -96,9 +97,10 @@ static void EditorSaveLevel(const char* name) {
 // ============================================================
 
 void EditorUpdate(KeyboardState* ks, double dt) {
-    static int  ed_type   = 1;
-    static int  ed_sel_id = -1;
+    static int  ed_type        = 1;
+    static int  ed_sel_id      = -1;
     static int  ed_w = 15, ed_h = 9;
+    static int  ed_dialogue_id = 0;
 
     // ---- ImGui panel (108px strip at top of screen) ----
     UI_Window_Options wo = { true, true, true, true, false, true };
@@ -120,6 +122,17 @@ void EditorUpdate(KeyboardState* ks, double dt) {
     if (DrawSimpleImageButton("TP",  sprites[SPR_TELEPORTER],    { U*5.8f, 0.2f }, { U*0.6f, 0.6f })) ed_type = 8;
     if (DrawSimpleImageButton("CC",  sprites[SPR_COLOR_CHANGER], { U*6.6f, 0.2f }, { U*0.6f, 0.6f })) ed_type = 9;
     if (DrawSimpleImageButton("PL",  sprites[SPR_PLAYER_NEUTRAL],{ U*7.4f, 0.2f }, { U*0.6f, 0.6f })) ed_type = 10;
+
+    {
+        ImGui::SetCursorPos(ImVec2((int)(U * 7.7f * 1280), (int)(0.58f * 108)));
+        if (ImGui::Button("PK##pickup", ImVec2((int)(U * 0.5f * 1280), 0))) ed_type = 11;
+    }
+    if (ed_type == 11) {
+        ImGui::SetCursorPos(ImVec2((int)(U * 8.25f * 1280), (int)(0.58f * 108)));
+        ImGui::SetNextItemWidth((int)(U * 0.85f * 1280));
+        ImGui::InputInt("dlg##dlgid", &ed_dialogue_id);
+        if (ed_dialogue_id < 0) ed_dialogue_id = 0;
+    }
 
     { char s[16]; sprintf(s, "W:%d", ed_w); DrawSimpleText(s, { U*9.3f, 0.25f }, UI_Alignment::TOP_LEFT); }
     { char s[16]; sprintf(s, "H:%d", ed_h); DrawSimpleText(s, { U*9.3f, 0.55f }, UI_Alignment::TOP_LEFT); }
@@ -172,6 +185,7 @@ void EditorUpdate(KeyboardState* ks, double dt) {
                     entity_map.SetID(mx,my,1,id);
                     player_ids[num_players++] = id;
                     break;
+                case 11: PickupInit(id, &comp_arrays, {mx,my}, ed_dialogue_id); entity_map.SetID(mx,my,0,id); break;
                 default: level_info.num_entities--; break;
             }
         }

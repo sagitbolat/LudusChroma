@@ -1,4 +1,102 @@
 // ============================================================
+// SECTION: Cutscene / dialogue system
+// ============================================================
+
+extern AudioSource* cutscene_voice_source;
+
+static CutsceneState cutscene = {};
+
+static void PlayLineAudio(int dialogue_id, int line) {
+    StopSound(cutscene_voice_source);
+    if (cutscene.clip) { FreeSoundClip(cutscene.clip); cutscene.clip = nullptr; }
+    if (dialogue_id < 0 || dialogue_id >= NUM_DIALOGUES) return;
+    if (line < 0 || line >= dialogues[dialogue_id].num_lines) return;
+    const char* audio = dialogues[dialogue_id].audio_paths[line];
+    if (audio && audio[0] != '\0') {
+        cutscene.clip = LoadSoundClip(audio);
+        if (cutscene.clip) PlaySoundFromSource(cutscene_voice_source, cutscene.clip);
+    }
+}
+
+static void StartCutscene(int dialogue_id) {
+    cutscene.active       = true;
+    cutscene.dialogue_id  = dialogue_id;
+    cutscene.current_line = 0;
+    PlayLineAudio(dialogue_id, 0);
+}
+
+static void EndCutscene() {
+    cutscene.active = false;
+    StopSound(cutscene_voice_source);
+    if (cutscene.clip) { FreeSoundClip(cutscene.clip); cutscene.clip = nullptr; }
+}
+
+static void ApplyPowerGrant(PowerGrant power) {
+    switch (power) {
+        case PowerGrant::ColorSwitcher: player_progress.color_switcher_unlocked = true; break;
+        case PowerGrant::UnlockRed:     player_progress.red_unlocked            = true; break;
+        case PowerGrant::UnlockGreen:   player_progress.green_unlocked          = true; break;
+        case PowerGrant::UnlockBlue:    player_progress.blue_unlocked           = true; break;
+        default: break;
+    }
+}
+
+// Draws the dialogue overlay and handles SPACE to advance lines.
+// Returns true while the cutscene is still active.
+static bool RenderCutscene(KeyboardState* ks) {
+    if (!cutscene.active) return false;
+    if (cutscene.dialogue_id < 0 || cutscene.dialogue_id >= NUM_DIALOGUES) {
+        EndCutscene();
+        return false;
+    }
+    DialogueEntry& dlg = dialogues[cutscene.dialogue_id];
+
+    // SPACE advances to next line; on last line, ends cutscene and grants power.
+    if (ks->state.SPACE && !ks->prev_state.SPACE) {
+        ++cutscene.current_line;
+        if (cutscene.current_line >= dlg.num_lines) {
+            ApplyPowerGrant(dlg.power);
+            EndCutscene();
+            return false;
+        }
+        PlayLineAudio(cutscene.dialogue_id, cutscene.current_line);
+    }
+
+    // Draw a semi-transparent letterbox at the bottom third of the screen.
+    ImGuiIO& io = ImGui::GetIO();
+    float sw    = io.DisplaySize.x;
+    float sh    = io.DisplaySize.y;
+    float box_h = sh * 0.22f;
+    float box_y = sh - box_h;
+
+    ImGui::SetNextWindowPos(ImVec2(0, box_y));
+    ImGui::SetNextWindowSize(ImVec2(sw, box_h));
+    ImGui::SetNextWindowBgAlpha(0.82f);
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                             ImGuiWindowFlags_NoNav        | ImGuiWindowFlags_NoMove   |
+                             ImGuiWindowFlags_NoBringToFrontOnFocus;
+    ImGui::Begin("##cutscene", nullptr, flags);
+
+    ImGui::SetCursorPos(ImVec2(sw * 0.05f, box_h * 0.15f));
+    ImGui::SetWindowFontScale(2.0f);
+
+    const char* line = (cutscene.current_line < dlg.num_lines)
+                       ? dlg.text_lines[cutscene.current_line]
+                       : "";
+    ImGui::TextWrapped("%s", line ? line : "");
+    ImGui::SetWindowFontScale(1.0f);
+
+    // "SPACE to continue" hint in bottom-right corner
+    ImVec2 hint_size = ImGui::CalcTextSize("[ SPACE ]");
+    ImGui::SetCursorPos(ImVec2(sw * 0.9f - hint_size.x, box_h * 0.72f));
+    ImGui::TextUnformatted("[ SPACE ]");
+
+    ImGui::End();
+    return true;
+}
+
+
+// ============================================================
 // SECTION: Title-card text helper
 // ============================================================
 
@@ -194,8 +292,25 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
         }
     }
 
+    // ---- Pickup overlap check ----
+    if (!cutscene.active && !level_transitioning) {
+        for (int p = 0; p < num_players; ++p) {
+            GridPosition* gp = comp_arrays.grid_position_arr.Get(player_ids[p]);
+            GridMover*    gm = comp_arrays.grid_mover_arr.Get(player_ids[p]);
+            if (!gp || (gm && gm->moving)) continue;
+            int floor_id = entity_map.GetID(gp->position.x, gp->position.y, (int)GridLayer::GroundLayer);
+            if (floor_id < 0) continue;
+            Pickup* pk = comp_arrays.pickup_arr.Get(floor_id);
+            if (!pk || pk->consumed) continue;
+            pk->consumed = true;
+            entity_map.SetID(gp->position.x, gp->position.y, (int)GridLayer::GroundLayer, -1);
+            StartCutscene(pk->dialogue_id);
+            break;
+        }
+    }
+
     // ---- Input ----
-    if (!level_transitioning && num_players > 0) {
+    if (!level_transitioning && !cutscene.active && num_players > 0) {
         bool any_moving = false;
         for (int p = 0; p < num_players; ++p) {
             GridMover* gm = comp_arrays.grid_mover_arr.Get(player_ids[p]);
@@ -406,6 +521,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
     }
 
     GameRender();
+    RenderCutscene(ks);
 
     // ---- Shake timers ----
     for (int s = 0; s < MAX_SHAKE_ENTRIES; ++s) {

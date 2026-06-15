@@ -47,6 +47,7 @@ int  export_idx            = 0;
 #include "entity.h"
 #include "entity_render.h"
 #include "level_loader.h"
+#include "game_dialogues.h"
 
 
 // ============================================================
@@ -54,10 +55,10 @@ int  export_idx            = 0;
 // ============================================================
 
 void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* clear_color) {
-    *w                = 1920;
-    *h                = 1080;
+    *w                = 1280;
+    *h                = 720;
     *w_in_world_space = 14.0f;
-    *fullscreen       = true;
+    *fullscreen       = false;
     *clear_color      = ToFColor(DEFAULT_BLACK);
 }
 
@@ -155,6 +156,8 @@ Sprite undo_sprite;
 Sprite wire_view_sprite;
 Sprite color_switch_sprite;
 
+Sprite letter_sprite;
+
 Sprite title_text;
 Sprite title_text2;
 Sprite act1_text;
@@ -169,6 +172,8 @@ Color  iris_revealing_color  = {};
 float  iris_timer            = 0.f;
 bool   iris_expanding        = false;
 const float IRIS_DURATION    = 400.f;
+
+AudioSource* cutscene_voice_source = nullptr;
 
 static bool editor_mode  = false;
 static char ed_name[256] = "";
@@ -311,6 +316,7 @@ void Awake(GameMemory* gm) {
     wire_view_sprite    = LoadSprite("assets/wire_view_control.png",    shaders, gpu_buffers);
     color_switch_sprite = LoadSprite("assets/color_switch_control.png", shaders, gpu_buffers);
     
+    letter_sprite     = LoadSprite("assets/letter_sprite.png",    shaders, gpu_buffers);
     title_text        = LoadSprite("assets/title.png",            shaders, gpu_buffers);
     title_text2       = LoadSprite("assets/title2.png",           shaders, gpu_buffers);
     act1_text         = LoadSprite("assets/act1.png",             shaders, gpu_buffers);
@@ -366,6 +372,8 @@ void Awake(GameMemory* gm) {
     teleporter_anim_sheet = MakeSpriteSheet(LoadSprite("assets/teleporter_anim.png",  shaders, gpu_buffers), 3, 1, 3);
     endgoal_overlay_anim_sheet = MakeSpriteSheet(LoadSprite("assets/endgoal_overlay_anim.png", shaders, gpu_buffers), 7, 1, 7);
 
+    cutscene_voice_source = LoadAudioSource(false, 1.0f);
+
     comp_arrays.Init(MAX_ENTITIES);
 
     LoadLevel(curr_level_index);
@@ -385,6 +393,7 @@ void UserFree() {
     free(entity_map.map);    entity_map.map    = nullptr;
     free(emission_map.map);  emission_map.map  = nullptr;
     free(undo_list);         undo_list         = nullptr;
+    if (cutscene_voice_source) { FreeAudioSource(cutscene_voice_source); cutscene_voice_source = nullptr; }
     FreeGPUBuffers(gpu_buffers);
     FreeShaders(shaders);
     FreeShaders(iris_shaders);

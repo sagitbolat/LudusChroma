@@ -6,6 +6,8 @@
 
 extern Sprite color_changer_additive_sprite;
 extern Sprite color_changer_subtractive_sprite;
+extern Sprite letter_sprite;
+extern float  global_anim_timer;
 
 // Sprite index constants — must match the sprite array loaded in game.cpp
 #define SPR_PLAYER_NEUTRAL   0
@@ -557,6 +559,19 @@ void EntityRender(int entity_id, ComponentArrays* ca, GL_ID* shaders, const Spri
         if (ct) ColorMulReset(shaders, !level_transitioning);
         UVReset(shaders);
         goto done;
+    }
+
+    // ---- Pickup ----
+    {
+        Pickup* pk = ca->pickup_arr.Get(entity_id);
+        if (pk && !pk->consumed) {
+            float hover = sinf(global_anim_timer * 0.003f) * 0.15f;
+            Transform t{};
+            CopyTransform(&t, rt->transform);
+            t.position.y += hover;
+            DrawSprite(letter_sprite, t, main_camera);
+            goto done;
+        }
     }
 
     // ---- Static block ----
