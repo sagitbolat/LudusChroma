@@ -3,6 +3,8 @@
 // ============================================================
 
 extern AudioSource* cutscene_voice_source;
+extern Sprite       dialogue_frame_sprite;
+extern ImFont*      dialogue_font;
 
 static CutsceneState cutscene = {};
 
@@ -22,6 +24,7 @@ static void StartCutscene(int dialogue_id) {
     cutscene.active       = true;
     cutscene.dialogue_id  = dialogue_id;
     cutscene.current_line = 0;
+    cutscene.text_timer   = 0.f;
     PlayLineAudio(dialogue_id, 0);
 }
 
@@ -43,7 +46,7 @@ static void ApplyPowerGrant(PowerGrant power) {
 
 // Draws the dialogue overlay and handles SPACE to advance lines.
 // Returns true while the cutscene is still active.
-static bool RenderCutscene(KeyboardState* ks) {
+static bool RenderCutscene(KeyboardState* ks, double dt) {
     if (!cutscene.active) return false;
     if (cutscene.dialogue_id < 0 || cutscene.dialogue_id >= NUM_DIALOGUES) {
         EndCutscene();
@@ -51,45 +54,75 @@ static bool RenderCutscene(KeyboardState* ks) {
     }
     DialogueEntry& dlg = dialogues[cutscene.dialogue_id];
 
-    // SPACE advances to next line; on last line, ends cutscene and grants power.
+    const char* line     = (cutscene.current_line < dlg.num_lines) ? dlg.text_lines[cutscene.current_line] : "";
+    int         line_len = line ? (int)strlen(line) : 0;
+
+    const float CHARS_PER_SEC = 40.f;
+    cutscene.text_timer      += (float)dt;
+    int  chars_visible = (int)(cutscene.text_timer * CHARS_PER_SEC / 1000.f);
+    if (chars_visible > line_len) chars_visible = line_len;
+    bool typing_done   = (chars_visible >= line_len);
+
+    // SPACE: skip typewriter if still animating, else advance to next line.
     if (ks->state.SPACE && !ks->prev_state.SPACE) {
-        ++cutscene.current_line;
-        if (cutscene.current_line >= dlg.num_lines) {
-            ApplyPowerGrant(dlg.power);
-            EndCutscene();
-            return false;
+        if (!typing_done) {
+            cutscene.text_timer = (float)line_len * 1000.f / CHARS_PER_SEC + 1.f;
+            chars_visible       = line_len;
+        } else {
+            ++cutscene.current_line;
+            cutscene.text_timer = 0.f;
+            if (cutscene.current_line >= dlg.num_lines) {
+                ApplyPowerGrant(dlg.power);
+                EndCutscene();
+                return false;
+            }
+            PlayLineAudio(cutscene.dialogue_id, cutscene.current_line);
         }
-        PlayLineAudio(cutscene.dialogue_id, cutscene.current_line);
     }
 
-    // Draw a semi-transparent letterbox at the bottom third of the screen.
-    ImGuiIO& io = ImGui::GetIO();
-    float sw    = io.DisplaySize.x;
-    float sh    = io.DisplaySize.y;
-    float box_h = sh * 0.22f;
-    float box_y = sh - box_h;
+    // Frame: 90% of screen width, height = width/8, bottom-padded.
+    ImGuiIO& io      = ImGui::GetIO();
+    float sw         = io.DisplaySize.x;
+    float sh         = io.DisplaySize.y;
+    float frame_w    = sw * 0.9f;
+    float frame_h    = frame_w / 8.0f;
+    float frame_x    = (sw - frame_w) * 0.5f;
+    float bottom_pad = sh * 0.03f;
+    float box_y      = sh - frame_h - bottom_pad;
 
     ImGui::SetNextWindowPos(ImVec2(0, box_y));
-    ImGui::SetNextWindowSize(ImVec2(sw, box_h));
-    ImGui::SetNextWindowBgAlpha(0.82f);
+    ImGui::SetNextWindowSize(ImVec2(sw, frame_h + bottom_pad));
+    ImGui::SetNextWindowBgAlpha(0.0f);
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
                              ImGuiWindowFlags_NoNav        | ImGuiWindowFlags_NoMove   |
                              ImGuiWindowFlags_NoBringToFrontOnFocus;
     ImGui::Begin("##cutscene", nullptr, flags);
 
-    ImGui::SetCursorPos(ImVec2(sw * 0.05f, box_h * 0.15f));
-    ImGui::SetWindowFontScale(2.0f);
+    ImVec2 win_pos    = ImGui::GetWindowPos();
+    ImVec2 frame_min  = ImVec2(win_pos.x + frame_x, win_pos.y);
+    ImVec2 frame_max  = ImVec2(frame_min.x + frame_w, frame_min.y + frame_h);
+    ImGui::GetWindowDrawList()->AddImage(
+        (ImTextureID)(void*)SkyGetGLID(dialogue_frame_sprite.texture_id),
+        frame_min, frame_max,
+        ImVec2(0, 1), ImVec2(1, 0)
+    );
 
-    const char* line = (cutscene.current_line < dlg.num_lines)
-                       ? dlg.text_lines[cutscene.current_line]
-                       : "";
-    ImGui::TextWrapped("%s", line ? line : "");
-    ImGui::SetWindowFontScale(1.0f);
+    // Text — use dialogue_font if loaded, otherwise fall back to the default.
+    if (dialogue_font) ImGui::PushFont(dialogue_font);
 
-    // "SPACE to continue" hint in bottom-right corner
+    float text_x      = frame_x + frame_w * 0.06f;
+    float text_wrap_x = frame_x + frame_w * 0.94f;
+    ImGui::SetCursorPos(ImVec2(text_x, frame_h * 0.15f));
+    ImGui::PushTextWrapPos(text_wrap_x);
+    ImGui::TextUnformatted(line, line + chars_visible);
+    ImGui::PopTextWrapPos();
+
+    // "SPACE to continue" hint anchored to right edge of frame
     ImVec2 hint_size = ImGui::CalcTextSize("[ SPACE ]");
-    ImGui::SetCursorPos(ImVec2(sw * 0.9f - hint_size.x, box_h * 0.72f));
+    ImGui::SetCursorPos(ImVec2(frame_x + frame_w * 0.94f - hint_size.x, frame_h * 0.72f));
     ImGui::TextUnformatted("[ SPACE ]");
+
+    if (dialogue_font) ImGui::PopFont();
 
     ImGui::End();
     return true;
@@ -521,7 +554,7 @@ void GameUpdate(GameState* gs, KeyboardState* ks, double dt) {
     }
 
     GameRender();
-    RenderCutscene(ks);
+    RenderCutscene(ks, dt);
 
     // ---- Shake timers ----
     for (int s = 0; s < MAX_SHAKE_ENTRIES; ++s) {

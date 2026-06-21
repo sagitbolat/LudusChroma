@@ -55,10 +55,10 @@ int  export_idx            = 0;
 // ============================================================
 
 void Init(int* w, int* h, float* w_in_world_space, bool* fullscreen, fColor* clear_color) {
-    *w                = 1280;
-    *h                = 720;
+    *w                = 1980;
+    *h                = 1080;
     *w_in_world_space = 14.0f;
-    *fullscreen       = false;
+    *fullscreen       = true;
     *clear_color      = ToFColor(DEFAULT_BLACK);
 }
 
@@ -157,6 +157,8 @@ Sprite wire_view_sprite;
 Sprite color_switch_sprite;
 
 Sprite letter_sprite;
+Sprite dialogue_frame_sprite;
+ImFont* dialogue_font = nullptr;
 
 Sprite title_text;
 Sprite title_text2;
@@ -316,7 +318,9 @@ void Awake(GameMemory* gm) {
     wire_view_sprite    = LoadSprite("assets/wire_view_control.png",    shaders, gpu_buffers);
     color_switch_sprite = LoadSprite("assets/color_switch_control.png", shaders, gpu_buffers);
     
-    letter_sprite     = LoadSprite("assets/letter_sprite.png",    shaders, gpu_buffers);
+    letter_sprite          = LoadSprite("assets/letter_sprite.png",    shaders, gpu_buffers);
+    dialogue_frame_sprite  = LoadSprite("assets/dialogue_frame.png",   shaders, gpu_buffers);
+    dialogue_font          = LoadFont("assets/dialogue_font.ttf", 36.0f);
     title_text        = LoadSprite("assets/title.png",            shaders, gpu_buffers);
     title_text2       = LoadSprite("assets/title2.png",           shaders, gpu_buffers);
     act1_text         = LoadSprite("assets/act1.png",             shaders, gpu_buffers);

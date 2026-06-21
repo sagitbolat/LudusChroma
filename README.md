@@ -11,6 +11,7 @@
 
 
 # Features TODO:
+- [TODO] Add a way to revisit old areas to go into secret levels that are unlockable only through new powers.
 - [TODO] Add a color switcher entity that swithces the clear color when activated with a button or reciever. When deactivated, goes back to the normal color. 
     - If multiple are activated, mix their colors additively?
 - Think whether to add a rotator entity that is part of the floor layer and rotates whatever is placed on top of it.
