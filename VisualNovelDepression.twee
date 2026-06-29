@@ -1,0 +1,61 @@
+:: StoryTitle
+VisualNovelDepression
+
+
+:: StoryData
+{
+  "ifid": "72C07BC4-957F-48A7-B274-270357FBAACC",
+  "format": "Harlowe",
+  "format-version": "3.3.9",
+  "start": "Intro",
+  "zoom": 1
+}
+
+
+:: Check your phone again {"position":"2900,2025","size":"100,100"}
+
+
+
+:: Do the dishes {"position":"3775,1775","size":"100,100"}
+
+
+
+:: Gather up trash {"position":"3500,1400","size":"100,100"}
+
+
+
+:: Get out of bed {"position":"3450,1750","size":"100,100"}
+You get out of bed, your headache and nausea are worsened by the upright position. It takes all your willpower to resist plopping back into bed and scrolling through your phone until you fall asleep again. 
+There are dirty dishes in the sink, dirty dishes on your dinning room table, dirty dishes on your desk. Next to the dirty dishes are empty takeout boxes. Next to them are empty cans. Next to them are used napkins. 
+
+[[Gather up trash]]
+[[Do the dishes]]
+[[Take a shower]]
+
+
+:: Intro {"position":"3175,1750","size":"100,100"}
+The sun is going down. California's winter causes the day to end around four or five in the afternoon. The orange glow penetrates through the cracks of your shutters. This wakes you up. You feel groggy, your mouth is dry, your head hurts, and you feel nauseous. You check your phone for the time. 4:42 pm. You have several notifications from a group chat with all of your highschool friends. They are planning on hopping on a game together. One of them tags you by name, asking if you will join. That whole conversation happened hours ago. They are all long asleep. You live on the west coast of California. They all live in different places around main-land Europe and the UK. Ordinarily, you would feel bad for having missed out on hanging out with them virtually. Not now. Not anymore. When you were in highschool, you were constantly anxious about missing out. You would attend every gathering you could. It was important that you did not miss anything social. But you haven't felt this way in years. The first year you were away, you came back for the summer. The next year, you had to take summer classes, because you were struggling academically. Turns out going to the best school you could, also meant you had to perform better academically than you could. You read all the plans that your friends were making without you. Every social gathering you couldn't attend was planned where you could read about it. Inside jokes were born from things you missed. Eventually you stopped caring, because it didn't seem like anyone else really cared either. You were on the sidelines looking in, and eventually you stopped looking. 
+All of that didn't matter now. You got passed your university degree, and now you were meant to be looking for work. But your days consisted of other things now.
+
+[[Get out of bed]] 
+[[Stay In Bed]] 
+
+
+:: Pick up and read your book {"position":"2575,1725","size":"100,100"}
+
+
+
+:: Reach over for your laptop {"position":"2825,1475","size":"100,100"}
+
+
+
+:: Stay In Bed {"position":"2900,1725","size":"100,100"}
+You reach to your bedsite table, and drink the last of the water in your cup. It does little to alleviate the dryness in your throat. Your headache gets worse from the movement. You hear your stomach rumble as the water reaches it. You haven't eaten since around this time yesterday. Not proper food anyway. You decide you will get food and water later. When the pain in your stomach or the dryness in your throat becomes unbearable, whichever comes first.
+
+[[Pick up and read your book]]
+[[Reach over for your laptop]]
+[[Check your phone again]]
+
+
+:: Take a shower {"position":"3450,2075","size":"100,100"}
+
