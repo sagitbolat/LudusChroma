@@ -37,7 +37,7 @@ static DialogueEntry dialogues[] = {
           "He lived in a world of Color, but all he saw was shades of Grey.",
           "Did he find the truth?",
           "He went out to search for something he could not yet understand.",
-          "But once he did understand, he wished he could forget."
+          "But with understanding, he lost his happiness."
         },
         6,
         PowerGrant::None,

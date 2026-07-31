@@ -370,18 +370,18 @@ static inline Color BlendColor(Color a, Color b) {
 
 static inline Color AddColor(Color a, Color b) {
     return Color{
-        (uint8_t)IntClamp(a.r - 92 + b.r, 92, 230),
-        (uint8_t)IntClamp(a.g - 92 + b.g, 92, 230),
-        (uint8_t)IntClamp(a.b - 92 + b.b, 92, 230),
+        (uint8_t)IntClamp(a.r - COLOR_LOW_BOUND + b.r, COLOR_LOW_BOUND, COLOR_HIGH_BOUND),
+        (uint8_t)IntClamp(a.g - COLOR_LOW_BOUND + b.g, COLOR_LOW_BOUND, COLOR_HIGH_BOUND),
+        (uint8_t)IntClamp(a.b - COLOR_LOW_BOUND + b.b, COLOR_LOW_BOUND, COLOR_HIGH_BOUND),
         uint8_t(255)
     };
 }
 
 static inline Color SubtractColor(Color a, Color b) {
     return Color{
-        (uint8_t)IntClamp(a.r - (b.r - 92), 92, 230),
-        (uint8_t)IntClamp(a.g - (b.g - 92), 92, 230),
-        (uint8_t)IntClamp(a.b - (b.b - 92), 92, 230),
+        (uint8_t)IntClamp(a.r - (b.r - COLOR_LOW_BOUND), COLOR_LOW_BOUND, COLOR_HIGH_BOUND),
+        (uint8_t)IntClamp(a.g - (b.g - COLOR_LOW_BOUND), COLOR_LOW_BOUND, COLOR_HIGH_BOUND),
+        (uint8_t)IntClamp(a.b - (b.b - COLOR_LOW_BOUND), COLOR_LOW_BOUND, COLOR_HIGH_BOUND),
         uint8_t(255) 
     };
 }

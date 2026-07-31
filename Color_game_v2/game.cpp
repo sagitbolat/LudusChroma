@@ -12,14 +12,17 @@ DEFINE_LIST(int);
 #define MAX_ENTITIES    256
 #define MAX_NUM_PLAYERS 256
 
-const Color DEFAULT_WHITE   = Color{ 230, 230, 230, 255 };
-const Color DEFAULT_BLACK   = Color{  92,  92,  92, 255 };
-const Color DEFAULT_RED     = Color{ 230,  92,  92, 255 };
-const Color DEFAULT_GREEN   = Color{  92, 230,  92, 255 };
-const Color DEFAULT_BLUE    = Color{  92,  92, 230, 255 };
-const Color DEFAULT_YELLOW  = Color{ 230, 230,  92, 255 };
-const Color DEFAULT_MAGENTA = Color{ 230,  92, 230, 255 };
-const Color DEFAULT_CYAN    = Color{  92, 230, 230, 255 };
+#define COLOR_LOW_BOUND 0
+#define COLOR_HIGH_BOUND 230
+
+const Color DEFAULT_WHITE   = Color{ COLOR_HIGH_BOUND, COLOR_HIGH_BOUND, COLOR_HIGH_BOUND, 255 };
+const Color DEFAULT_BLACK   = Color{ COLOR_LOW_BOUND, COLOR_LOW_BOUND,  COLOR_LOW_BOUND, 255 };
+const Color DEFAULT_RED     = Color{ COLOR_HIGH_BOUND,  COLOR_LOW_BOUND,  COLOR_LOW_BOUND, 255 };
+const Color DEFAULT_GREEN   = Color{  COLOR_LOW_BOUND, COLOR_HIGH_BOUND,  COLOR_LOW_BOUND, 255 };
+const Color DEFAULT_BLUE    = Color{  COLOR_LOW_BOUND,  COLOR_LOW_BOUND, COLOR_HIGH_BOUND, 255 };
+const Color DEFAULT_YELLOW  = Color{ COLOR_HIGH_BOUND, COLOR_HIGH_BOUND,  COLOR_LOW_BOUND, 255 };
+const Color DEFAULT_MAGENTA = Color{ COLOR_HIGH_BOUND,  COLOR_LOW_BOUND, COLOR_HIGH_BOUND, 255 };
+const Color DEFAULT_CYAN    = Color{  COLOR_LOW_BOUND, COLOR_HIGH_BOUND, COLOR_HIGH_BOUND, 255 };
 
 // Declared before game headers because tilemap.h's DrawTile references them as globals.
 GL_ID*        shaders               = nullptr;
